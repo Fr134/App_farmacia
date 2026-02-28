@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Report {
+  id              String   @id @default(cuid())
+  filename        String
+  file_hash       String   @unique
+  period_month    Int
+  period_year     Int
+  uploaded_at     DateTime @default(now())
+
+  total_revenue_gross Decimal @db.Decimal(12, 2)
+  total_revenue_net   Decimal @db.Decimal(12, 2)
+  total_iva           Decimal @db.Decimal(12, 2)
+  total_cost          Decimal @db.Decimal(12, 2)
+  total_margin        Decimal @db.Decimal(12, 2)
+  total_margin_pct    Decimal @db.Decimal(5, 2)
+  total_markup_pct    Decimal @db.Decimal(5, 2)
+  total_pieces        Int
+  total_sales         Int
+
+  sectors SectorData[]
+
+  @@unique([period_month, period_year])
+}
+
+model SectorData {
+  id        String @id @default(cuid())
+  report_id String
+  report    Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
+
+  tipologia       String
+  valore          Decimal  @db.Decimal(12, 2)
+  valore_pct      Decimal? @db.Decimal(5, 2)
+  media_pezzi     Decimal? @db.Decimal(8, 2)
+  pezzi           Int      @default(0)
+  pezzi_pct       Decimal? @db.Decimal(5, 2)
+  n_vendite       Int      @default(0)
+  vendite_pct     Decimal? @db.Decimal(5, 2)
+  costo_venduto   Decimal? @db.Decimal(12, 2)
+  margine         Decimal? @db.Decimal(12, 2)
+  margine_tot_pct Decimal? @db.Decimal(5, 2)
+  margine_pct     Decimal? @db.Decimal(6, 2)
+  ricarico_pct    Decimal? @db.Decimal(6, 2)
+
+  pezzi_ricetta      Int?     @default(0)
+  pezzi_ricetta_pct  Decimal? @db.Decimal(5, 2)
+  pezzi_libera       Int?     @default(0)
+  pezzi_libera_pct   Decimal? @db.Decimal(5, 2)
+  pezzi_fidelity     Int?     @default(0)
+  pezzi_fidelity_pct Decimal? @db.Decimal(5, 2)
+  valore_ricetta     Decimal? @db.Decimal(12, 2)
+  valore_ricetta_pct Decimal? @db.Decimal(5, 2)
+  valore_libera      Decimal? @db.Decimal(12, 2)
+  valore_libera_pct  Decimal? @db.Decimal(5, 2)
+  valore_fidelity    Decimal? @db.Decimal(12, 2)
+  valore_fidelity_pct Decimal? @db.Decimal(5, 2)
+  imponibile         Decimal? @db.Decimal(12, 2)
+  imponibile_pct     Decimal? @db.Decimal(5, 2)
+  iva                Decimal? @db.Decimal(12, 2)
+  iva_pct            Decimal? @db.Decimal(5, 2)
+
+  @@index([report_id])
+}
