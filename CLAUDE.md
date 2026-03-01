@@ -2,60 +2,96 @@
 
 ## 🎯 Project
 **PharmaControl** — Management control web app for pharmacies.
-Stack: Next.js 14 (App Router) + Prisma ORM + PostgreSQL (Railway) + Tailwind CSS + Recharts.
+Monorepo with separate backend API and frontend client.
 
 ---
 
 ## 🏗️ Architecture
 
 ### Tech Stack
-- **Framework**: Next.js 14 with App Router (`/app` directory)
-- **Language**: TypeScript strict mode
+
+**Backend (REST API):**
+- **Runtime**: Node.js 18+
+- **Framework**: Express.js with TypeScript
 - **ORM**: Prisma with PostgreSQL
 - **Database**: PostgreSQL on Railway (free tier)
+- **File handling**: multer for CSV uploads
+- **Validation**: zod for request validation
+- **Port**: 4000 (dev)
+
+**Frontend (SPA):**
+- **Framework**: React 18 with Vite
+- **Language**: TypeScript strict mode
 - **Styling**: Tailwind CSS with custom dark theme
 - **Charts**: Recharts
-- **Deploy**: Railway
-- **Fonts**: JetBrains Mono (numbers) + Inter (UI)
+- **HTTP client**: fetch (native)
+- **Routing**: React Router v6
+- **Icons**: Lucide React
+- **Port**: 5173 (dev)
 
-### Directory Structure
+**Deploy**: Both on Railway (2 services + 1 PostgreSQL)
+
+### Monorepo Directory Structure
 ```
 pharma-control/
-├── prisma/
-│   └── schema.prisma
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx              # Root layout with fonts + theme
-│   │   ├── page.tsx                # Redirect to /dashboard
-│   │   ├── dashboard/
-│   │   │   └── page.tsx            # Main dashboard page
-│   │   ├── upload/
-│   │   │   └── page.tsx            # CSV upload page
-│   │   └── api/
-│   │       ├── upload/
-│   │       │   └── route.ts        # Upload + CSV validation API
-│   │       ├── reports/
-│   │       │   └── route.ts        # Read reports API
-│   │       └── reports/[id]/
-│   │           └── route.ts        # Single report API
-│   ├── components/
-│   │   ├── ui/                     # Base components (Card, Button, etc.)
-│   │   ├── dashboard/              # Dashboard components (KPICard, Charts)
-│   │   ├── upload/                 # Upload components (Dropzone, Validator)
-│   │   └── layout/                 # Navbar, Sidebar
-│   ├── lib/
-│   │   ├── prisma.ts               # Prisma client singleton
-│   │   ├── csv-parser.ts           # CSV parser with validation
-│   │   ├── csv-validator.ts        # Validation rules
-│   │   ├── formatters.ts           # Italian number formatting (€, %, etc.)
-│   │   └── constants.ts            # Colors, valid product types, etc.
-│   └── types/
-│       └── index.ts                # TypeScript types
-├── public/
-├── .env                            # DATABASE_URL
-├── tailwind.config.ts
-├── next.config.js
-└── package.json
+├── backend/
+│   ├── prisma/
+│   │   └── schema.prisma
+│   ├── src/
+│   │   ├── index.ts                # Express server entry point
+│   │   ├── routes/
+│   │   │   ├── upload.ts           # POST /api/upload
+│   │   │   ├── reports.ts          # GET /api/reports, GET/DELETE /api/reports/:id
+│   │   │   └── health.ts          # GET /api/health
+│   │   ├── services/
+│   │   │   ├── csv-parser.ts       # CSV parsing logic
+│   │   │   ├── csv-validator.ts    # Validation rules
+│   │   │   └── report.service.ts   # DB operations (CRUD)
+│   │   ├── middleware/
+│   │   │   ├── error-handler.ts    # Global error handler
+│   │   │   └── cors.ts            # CORS config
+│   │   ├── lib/
+│   │   │   ├── prisma.ts          # Prisma client singleton
+│   │   │   └── formatters.ts      # Italian number parsing
+│   │   ├── types/
+│   │   │   └── index.ts           # Shared TypeScript types
+│   │   └── constants/
+│   │       └── index.ts           # Valid product types, Italian months
+│   ├── .env                       # DATABASE_URL, PORT
+│   ├── tsconfig.json
+│   └── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── main.tsx               # React entry point
+│   │   ├── App.tsx                # Router setup
+│   │   ├── pages/
+│   │   │   ├── DashboardPage.tsx  # Main dashboard
+│   │   │   └── UploadPage.tsx     # CSV upload page
+│   │   ├── components/
+│   │   │   ├── ui/                # Base components (KPICard, SectionCard, StatMini)
+│   │   │   ├── dashboard/         # Dashboard-specific (Charts, SectorList, PeriodSelector)
+│   │   │   ├── upload/            # Upload-specific (Dropzone, UploadHistory)
+│   │   │   └── layout/            # Sidebar, MainLayout
+│   │   ├── services/
+│   │   │   └── api.ts             # API client (all fetch calls to backend)
+│   │   ├── hooks/
+│   │   │   ├── useReports.ts      # Fetch reports list
+│   │   │   ├── useReport.ts       # Fetch single report
+│   │   │   └── useUpload.ts       # Upload file logic
+│   │   ├── lib/
+│   │   │   ├── formatters.ts      # Italian number formatting for display
+│   │   │   └── constants.ts       # Colors, chart config
+│   │   └── types/
+│   │       └── index.ts           # Frontend TypeScript types
+│   ├── index.html
+│   ├── vite.config.ts             # Proxy /api → backend in dev
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── package.json
+│
+├── .gitignore
+└── README.md
 ```
 
 ---
@@ -69,19 +105,35 @@ pharma-control/
 - **Percentages**: with comma and % symbol. E.g.: `30,10%`
 - **Currency**: € symbol before number. E.g.: `€53.077,35`
 
-### TypeScript
+### TypeScript (both backend and frontend)
 - Strict mode enabled
 - No `any` — use explicit types
 - Interfaces for data shapes, Types for unions
-- Enum for pharmaceutical product types
+- Shared types should mirror each other (backend defines, frontend consumes)
+
+### Backend Specific
+- Express routes grouped by resource in `/routes`
+- Business logic in `/services` — routes are thin (parse request → call service → send response)
+- All routes return consistent JSON: `{ success: boolean, data?: T, error?: string }`
+- Error handling via global middleware, never try/catch in route handlers directly
+- Use async/await everywhere, no callbacks
+- Prisma client as singleton (`lib/prisma.ts`)
+- Input validation with zod schemas before processing
+- File uploads via multer (memory storage, max 5MB, .csv only)
+
+### Frontend Specific
+- ONLY functional components with hooks
+- Custom hooks for data fetching (`/hooks`)
+- API calls centralized in `/services/api.ts` — components never call fetch directly
+- Component names: PascalCase
+- File names: PascalCase for components, camelCase for hooks/services
+- State management: React useState/useEffect (no Redux, no Zustand — app is simple)
 
 ### React Components
-- ONLY functional components with hooks
-- Server Components where possible (data fetching)
-- Client Components ONLY where interactivity is needed (`"use client"`)
 - Props typed with dedicated interfaces
-- Component names: PascalCase
-- File names: kebab-case.tsx
+- Loading states handled in every data-fetching component
+- Error states handled with user-friendly Italian messages
+- Empty states when no data available
 
 ### Styling & Design
 - **Theme**: Dark mode ONLY — no light mode
@@ -105,20 +157,6 @@ pharma-control/
 - **Number font**: JetBrains Mono (monospace)
 - **UI font**: Inter
 - **NO emoji in KPI cards** — use Lucide React icons
-
-### Database & Prisma
-- Prisma client as singleton (`lib/prisma.ts`)
-- Migrations managed with `prisma migrate dev`
-- Optional seed for demo data
-- Table names: snake_case
-- Column names: snake_case
-- Explicit relations with `@relation`
-
-### API Routes
-- Input validation ALWAYS server-side
-- JSON responses with consistent structure: `{ success: boolean, data?: T, error?: string }`
-- Error handling with try/catch and appropriate status codes
-- No rate limiting needed at this stage
 
 ---
 
@@ -168,7 +206,7 @@ The file is exported from the pharmacy management software. Characteristics:
 28: % (IVA)
 ```
 
-### Valid Product Types (Italian names — keep as-is)
+### Valid Product Types (Italian names — keep as-is, they match the CSV)
 ```
 Farmaco etico, Parafarmaco uso umano, Dispositivo medico, 
 Farmaco generico, Farmaco da banco, Alimento fini medici speciali,
@@ -180,6 +218,15 @@ Materia prima, Medicinale veter.prefabbricato, Codice di aggancio
 
 ### Prisma Schema
 ```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model Report {
   id              String    @id @default(cuid())
   filename        String
@@ -249,7 +296,7 @@ model SectorData {
 
 ## ✅ CSV Validation
 
-### Validation Rules (csv-validator.ts)
+### Validation Rules (backend: src/services/csv-validator.ts)
 
 1. **File structure**:
    - File MUST have `.csv` extension
@@ -271,7 +318,7 @@ model SectorData {
    - Margin % must be between -200% and +300% (reasonable pharmacy range)
    - N. Vendite and Pezzi must be non-negative integers (except "Codice di aggancio")
 
-4. **Italian number parsing** (`lib/csv-parser.ts`):
+4. **Italian number parsing** (`lib/formatters.ts`):
    ```typescript
    function parseItalianNumber(value: string): number | null {
      if (!value || value.trim() === '') return null;
@@ -289,7 +336,7 @@ model SectorData {
    - Expected pattern: `*_gennaio_26.csv`, `*_febbraio_26.csv`, etc.
    - Italian month names → number mapping
    - 2-digit year → 4-digit (26 → 2026)
-   - If not parseable from filename, ask the user
+   - If not parseable from filename, return error asking user to rename file
 
 ---
 
@@ -326,40 +373,116 @@ The dashboard reproduces EXACTLY the approved artifact design:
 
 ---
 
+## 🔌 API Endpoints
+
+### Backend REST API (base: /api)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/health | Health check, returns { status: "ok" } |
+| POST | /api/upload | Upload CSV file (multipart/form-data, field: "file") |
+| GET | /api/reports | List all reports (id, filename, period, uploaded_at, total_revenue_gross) |
+| GET | /api/reports/latest | Get the most recent report with all sector data |
+| GET | /api/reports/:id | Get a specific report with all sector data |
+| DELETE | /api/reports/:id | Delete a report and its sector data |
+
+### Response Format
+All endpoints return:
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+or on error:
+```json
+{
+  "success": false,
+  "error": "Human-readable error message"
+}
+```
+
+### Frontend → Backend Communication
+- In development: Vite proxy forwards `/api/*` to `http://localhost:4000`
+- In production: Both deployed on Railway, frontend calls backend via internal URL or public domain
+- Frontend API client (`services/api.ts`) provides typed functions:
+  ```typescript
+  export const api = {
+    getReports(): Promise<Report[]>,
+    getReport(id: string): Promise<ReportWithSectors>,
+    getLatestReport(): Promise<ReportWithSectors>,
+    uploadCsv(file: File): Promise<UploadResult>,
+    deleteReport(id: string): Promise<void>,
+  }
+  ```
+
+---
+
 ## 🚫 Do NOT
 
+- Do NOT use Next.js — this is Express (backend) + Vite/React (frontend)
+- Do NOT mix backend and frontend code — they are separate packages
 - Do NOT use light mode or light/dark toggle
 - Do NOT use fonts other than Inter and JetBrains Mono
 - Do NOT format numbers in English format (NEVER comma as thousands separator)
-- Do NOT use emoji in cards — use Lucide icons
+- Do NOT use emoji in KPI cards — use Lucide icons
 - Do NOT create APIs without input validation
 - Do NOT save CSV files to disk — only parsed data goes to DB
 - Do NOT allow duplicate uploads of the same file
 - Do NOT ignore Latin-1 encoding of CSV files
 - Do NOT create class components — only functional
-- Do NOT use `getServerSideProps` — use App Router (Server Components + API Routes)
+- Do NOT use Redux or Zustand — useState/useEffect is enough
 - Do NOT install unnecessary libraries — keep it lean
+- Do NOT put business logic in route handlers — use services
 
 ---
 
 ## 📦 Allowed Dependencies
+
+### Backend (backend/package.json)
 ```json
 {
   "dependencies": {
-    "next": "^14",
-    "react": "^18",
-    "react-dom": "^18",
+    "express": "^4",
     "@prisma/client": "^5",
-    "recharts": "^2",
-    "lucide-react": "latest",
-    "iconv-lite": "latest"
+    "multer": "^1",
+    "zod": "^3",
+    "iconv-lite": "latest",
+    "cors": "^2",
+    "dotenv": "^16"
   },
   "devDependencies": {
     "prisma": "^5",
     "typescript": "^5",
+    "@types/express": "^4",
+    "@types/multer": "^1",
+    "@types/cors": "^2",
+    "@types/node": "^20",
+    "tsx": "^4",
+    "nodemon": "^3"
+  }
+}
+```
+
+### Frontend (frontend/package.json)
+```json
+{
+  "dependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^6",
+    "recharts": "^2",
+    "lucide-react": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vite": "^5",
+    "@vitejs/plugin-react": "^4",
     "tailwindcss": "^3",
+    "autoprefixer": "^10",
+    "postcss": "^8",
     "@types/react": "^18",
-    "@types/node": "^20"
+    "@types/react-dom": "^18"
   }
 }
 ```
