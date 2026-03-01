@@ -60,12 +60,6 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
 export interface SerializedReport {
   id: string;
   filename: string;
@@ -121,18 +115,3 @@ export interface SerializedSectorData {
 export type ReportWithSectors = SerializedReport & {
   sectors: SerializedSectorData[];
 };
-
-export interface ReportSummary {
-  id: string;
-  filename: string;
-  periodMonth: number;
-  periodYear: number;
-  uploadedAt: string;
-  totalRevenueGross: number;
-}
-
-export interface UploadResult {
-  reportId: string;
-  period: { month: number; year: number };
-  warnings: string[];
-}

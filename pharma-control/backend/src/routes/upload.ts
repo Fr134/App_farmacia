@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { createHash } from "crypto";
 import { asyncHandler } from "../middleware/async-handler";
@@ -20,11 +21,28 @@ const upload = multer({
   },
 });
 
+function handleMulterError(err: Error, _req: Request, res: Response, next: NextFunction): void {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ success: false, error: "Il file supera il limite di 5 MB" });
+      return;
+    }
+    res.status(400).json({ success: false, error: `Errore upload: ${err.message}` });
+    return;
+  }
+  if (err.message) {
+    res.status(400).json({ success: false, error: err.message });
+    return;
+  }
+  next(err);
+}
+
 const router = Router();
 
 router.post(
   "/",
   upload.single("file"),
+  handleMulterError,
   asyncHandler(async (req, res) => {
     const file = req.file;
 

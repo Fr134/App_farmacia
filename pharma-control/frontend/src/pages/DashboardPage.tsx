@@ -17,6 +17,7 @@ import {
   formatCurrency,
   formatPercent,
   formatInteger,
+  pctChange,
 } from "@/lib/formatters";
 import KPICard from "@/components/ui/KPICard";
 import SectionCard from "@/components/ui/SectionCard";
@@ -26,11 +27,6 @@ import DistributionChart from "@/components/dashboard/DistributionChart";
 import MarginBySectorChart from "@/components/dashboard/MarginBySectorChart";
 import SectorList from "@/components/dashboard/SectorList";
 import ComparisonSummary from "@/components/dashboard/ComparisonSummary";
-
-function pctChange(curr: number, prev: number): number | null {
-  if (prev === 0) return curr === 0 ? 0 : 100;
-  return ((curr - prev) / Math.abs(prev)) * 100;
-}
 
 export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);

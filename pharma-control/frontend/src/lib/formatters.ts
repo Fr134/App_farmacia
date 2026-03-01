@@ -44,3 +44,12 @@ export function formatCompact(n: number): string {
   }
   return `${sign}${currencyFormatter.format(abs)}`;
 }
+
+export function pctChange(curr: number, prev: number): number {
+  if (prev === 0) return curr === 0 ? 0 : 100;
+  return ((curr - prev) / Math.abs(prev)) * 100;
+}
+
+export function truncName(name: string, max: number = 20): string {
+  return name.length > max ? name.slice(0, max) + "\u2026" : name;
+}

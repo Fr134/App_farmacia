@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
+
 interface SectionCardProps {
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
-  rightAction?: React.ReactNode;
+  children: ReactNode;
+  rightAction?: ReactNode;
 }
 
 export default function SectionCard({

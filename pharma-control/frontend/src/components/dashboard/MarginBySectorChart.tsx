@@ -8,7 +8,7 @@ import {
   Cell,
 } from "recharts";
 import { COLORS } from "@/lib/constants";
-import { formatPercent, formatCurrency } from "@/lib/formatters";
+import { formatPercent, formatCurrency, truncName } from "@/lib/formatters";
 import type { SectorData } from "@/types";
 
 interface Props {
@@ -29,10 +29,6 @@ function getTrafficLightColor(pct: number): string {
   if (pct > 40) return COLORS.accentGreen;
   if (pct >= 25) return COLORS.accentAmber;
   return COLORS.accentRed;
-}
-
-function truncName(name: string, max: number = 22): string {
-  return name.length > max ? name.slice(0, max) + "\u2026" : name;
 }
 
 function CustomTooltip({

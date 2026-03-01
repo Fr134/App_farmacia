@@ -8,16 +8,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { COLORS } from "@/lib/constants";
-import { formatCurrency, formatCompact } from "@/lib/formatters";
+import { formatCurrency, formatCompact, truncName } from "@/lib/formatters";
 import type { SectorData } from "@/types";
 
 interface Props {
   sectors: SectorData[];
   comparisonSectors?: SectorData[];
-}
-
-function truncName(name: string, max: number = 18): string {
-  return name.length > max ? name.slice(0, max) + "\u2026" : name;
 }
 
 function CustomTooltip({

@@ -1,6 +1,6 @@
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { COLORS, MESI_DISPLAY } from "@/lib/constants";
-import { formatCurrency, formatInteger, formatChange } from "@/lib/formatters";
+import { formatCurrency, formatInteger, formatChange, pctChange } from "@/lib/formatters";
 import type { ReportWithSectors } from "@/types";
 
 interface ComparisonSummaryProps {
@@ -14,11 +14,6 @@ interface DeltaMetric {
   previousValue: string;
   delta: number;
   deltaDisplay: string;
-}
-
-function pctChange(curr: number, prev: number): number {
-  if (prev === 0) return curr === 0 ? 0 : 100;
-  return ((curr - prev) / Math.abs(prev)) * 100;
 }
 
 function DeltaIcon({ delta }: { delta: number }) {
