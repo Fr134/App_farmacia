@@ -26,6 +26,9 @@ const config: Config = {
         sans: ["Inter", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
+      animation: {
+        "pulse-slow": "pulse-slow 2s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

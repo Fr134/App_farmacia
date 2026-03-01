@@ -78,3 +78,32 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+export type AlertSeverity = "critical" | "warning" | "info" | "positive";
+export type AlertCategory = "margin" | "revenue" | "cost" | "volume" | "channel" | "concentration" | "anomaly";
+
+export interface Alert {
+  id: string;
+  severity: AlertSeverity;
+  category: AlertCategory;
+  title: string;
+  message: string;
+  sector?: string;
+  metric: string;
+  currentValue: number;
+  previousValue?: number;
+  delta?: number;
+  threshold?: number;
+}
+
+export interface AlertSummary {
+  critical: number;
+  warning: number;
+  info: number;
+  positive: number;
+}
+
+export interface AlertResponse {
+  alerts: Alert[];
+  summary: AlertSummary;
+}

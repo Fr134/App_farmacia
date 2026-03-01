@@ -1,5 +1,6 @@
 import type {
   ApiResponse,
+  AlertResponse,
   ReportSummary,
   ReportWithSectors,
   UploadResult,
@@ -41,6 +42,15 @@ export async function getReport(id: string): Promise<ReportWithSectors> {
   return request<ReportWithSectors>(`/reports/${id}`);
 }
 
+export async function getAggregateReport(
+  from: string,
+  to: string
+): Promise<ReportWithSectors> {
+  return request<ReportWithSectors>(
+    `/reports/aggregate?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+  );
+}
+
 export async function uploadCsv(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("file", file);
@@ -49,6 +59,14 @@ export async function uploadCsv(file: File): Promise<UploadResult> {
     method: "POST",
     body: formData,
   });
+}
+
+export async function getAlerts(
+  reportId: string,
+  compareTo?: string
+): Promise<AlertResponse> {
+  const params = compareTo ? `?compare_to=${encodeURIComponent(compareTo)}` : "";
+  return request<AlertResponse>(`/reports/${reportId}/alerts${params}`);
 }
 
 export async function deleteReport(id: string): Promise<void> {

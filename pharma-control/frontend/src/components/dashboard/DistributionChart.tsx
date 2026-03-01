@@ -6,6 +6,7 @@ import type { SectorData } from "@/types";
 
 interface Props {
   sectors: SectorData[];
+  comparisonSectors?: SectorData[];
 }
 
 type Mode = "venduto" | "margine";
@@ -48,14 +49,19 @@ function CustomTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: SliceData; color: string }>;
+  payload?: Array<{ payload: SliceData & { ring?: string }; color: string }>;
 }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
 
   return (
     <div className="rounded-btn border border-border-card bg-bg-card px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs font-medium text-text-primary">{d.name}</p>
+      <p className="mb-1 text-xs font-medium text-text-primary">
+        {d.name}
+        {d.ring && (
+          <span className="ml-1 text-text-dim">({d.ring})</span>
+        )}
+      </p>
       <p className="font-mono text-xs text-text-muted">
         {formatCurrency(d.value)} ({formatPercent(d.pct)})
       </p>
@@ -63,9 +69,15 @@ function CustomTooltip({
   );
 }
 
-export default function DistributionChart({ sectors }: Props) {
+export default function DistributionChart({ sectors, comparisonSectors }: Props) {
   const [mode, setMode] = useState<Mode>("venduto");
   const data = prepareData(sectors, mode);
+  const hasComparison = comparisonSectors && comparisonSectors.length > 0;
+  const compData = hasComparison ? prepareData(comparisonSectors, mode) : [];
+
+  // Tag slices for tooltip identification
+  const outerData = data.map((d) => ({ ...d, ring: hasComparison ? "corrente" : undefined }));
+  const innerData = compData.map((d) => ({ ...d, ring: "precedente" }));
 
   return (
     <div>
@@ -91,16 +103,39 @@ export default function DistributionChart({ sectors }: Props) {
         <div className="w-[200px] h-[200px] flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
+              {/* Inner ring (previous period) — only in comparison mode */}
+              {hasComparison && (
+                <Pie
+                  data={innerData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={30}
+                  outerRadius={52}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {innerData.map((_, i) => (
+                    <Cell
+                      key={i}
+                      fill={CHART_COLORS[i % CHART_COLORS.length]}
+                      stroke="transparent"
+                      opacity={0.4}
+                    />
+                  ))}
+                </Pie>
+              )}
+
+              {/* Outer ring (current period) */}
               <Pie
-                data={data}
+                data={outerData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
+                innerRadius={hasComparison ? 58 : 55}
                 outerRadius={90}
                 paddingAngle={2}
                 dataKey="value"
               >
-                {data.map((_, i) => (
+                {outerData.map((_, i) => (
                   <Cell
                     key={i}
                     fill={CHART_COLORS[i % CHART_COLORS.length]}
@@ -131,6 +166,14 @@ export default function DistributionChart({ sectors }: Props) {
               </span>
             </div>
           ))}
+          {hasComparison && (
+            <div className="mt-1 flex items-center gap-2 border-t border-border-card pt-2">
+              <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/20" />
+              <span className="text-[10px] text-text-dim">
+                Anello interno = periodo precedente
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

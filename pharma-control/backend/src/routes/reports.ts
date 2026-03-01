@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/async-handler";
 import * as reportService from "../services/report.service";
+import { generateAlerts } from "../services/alert-engine";
 
 const router = Router();
 
@@ -10,6 +11,67 @@ router.get(
   asyncHandler(async (_req, res) => {
     const reports = await reportService.getAll();
     res.json({ success: true, data: reports });
+  })
+);
+
+// GET /api/reports/aggregate — aggregate reports across a date range
+router.get(
+  "/aggregate",
+  asyncHandler(async (req, res) => {
+    const from = req.query.from as string | undefined;
+    const to = req.query.to as string | undefined;
+
+    if (!from || !to) {
+      res.status(400).json({
+        success: false,
+        error: "Parametri 'from' e 'to' obbligatori (formato: YYYY-MM)",
+      });
+      return;
+    }
+
+    const fromMatch = from.match(/^(\d{4})-(\d{2})$/);
+    const toMatch = to.match(/^(\d{4})-(\d{2})$/);
+
+    if (!fromMatch || !toMatch) {
+      res.status(400).json({
+        success: false,
+        error: "Formato data non valido. Usare YYYY-MM (es: 2025-06)",
+      });
+      return;
+    }
+
+    const fromYear = parseInt(fromMatch[1], 10);
+    const fromMonth = parseInt(fromMatch[2], 10);
+    const toYear = parseInt(toMatch[1], 10);
+    const toMonth = parseInt(toMatch[2], 10);
+
+    if (fromMonth < 1 || fromMonth > 12 || toMonth < 1 || toMonth > 12) {
+      res.status(400).json({
+        success: false,
+        error: "Il mese deve essere tra 01 e 12",
+      });
+      return;
+    }
+
+    if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
+      res.status(400).json({
+        success: false,
+        error: "La data 'from' deve essere precedente o uguale a 'to'",
+      });
+      return;
+    }
+
+    const result = await reportService.getAggregate(fromMonth, fromYear, toMonth, toYear);
+
+    if (!result) {
+      res.status(404).json({
+        success: false,
+        error: "Nessun report trovato nel periodo selezionato",
+      });
+      return;
+    }
+
+    res.json({ success: true, data: result });
   })
 );
 
@@ -28,6 +90,32 @@ router.get(
     }
 
     res.json({ success: true, data: report });
+  })
+);
+
+// GET /api/reports/:id/alerts — generate alerts for a report
+router.get(
+  "/:id/alerts",
+  asyncHandler(async (req, res) => {
+    const report = await reportService.getById(req.params.id);
+
+    if (!report) {
+      res.status(404).json({
+        success: false,
+        error: "Report non trovato",
+      });
+      return;
+    }
+
+    const compareTo = req.query.compare_to as string | undefined;
+    let comparison = null;
+
+    if (compareTo) {
+      comparison = await reportService.getById(compareTo);
+    }
+
+    const result = generateAlerts(report, comparison);
+    res.json({ success: true, data: result });
   })
 );
 
