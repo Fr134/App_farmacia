@@ -123,3 +123,22 @@ export interface SerializedSectorData {
 export type ReportWithSectors = SerializedReport & {
   sectors: SerializedSectorData[];
 };
+
+// Client-side aliases (cleaner names for components)
+export type Report = SerializedReport;
+export type SectorData = SerializedSectorData;
+
+export interface ReportSummary {
+  id: string;
+  filename: string;
+  periodMonth: number;
+  periodYear: number;
+  uploadedAt: string;
+  totalRevenueGross: number;
+}
+
+export interface UploadResult {
+  reportId: string;
+  period: { month: number; year: number };
+  warnings: string[];
+}
