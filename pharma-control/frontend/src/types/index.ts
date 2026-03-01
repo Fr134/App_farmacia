@@ -52,6 +52,7 @@ export interface SerializedSectorData {
 
 export type ReportWithSectors = SerializedReport & {
   sectors: SerializedSectorData[];
+  aggregatedPeriods?: number;
 };
 
 // Client-side aliases

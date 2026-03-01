@@ -33,42 +33,40 @@ function getMonthOptions(reports: ReportSummary[]): { label: string; value: stri
   }));
 }
 
+type UIMode = "single" | "range";
+
+function toUIMode(mode: FilterMode): UIMode {
+  return mode === "range" ? "range" : "single";
+}
+
 export default function PeriodFilter({ state, onChange }: PeriodFilterProps) {
   const { reports, loading } = useReports();
 
   if (loading || reports.length === 0) return null;
 
-  const modes: { key: FilterMode; label: string }[] = [
-    { key: "single", label: "Singolo" },
-    { key: "compare", label: "Confronto" },
-    { key: "range", label: "Range" },
-  ];
+  const uiMode = toUIMode(state.mode);
+  const monthOptions = getMonthOptions(reports);
 
-  function handleModeChange(mode: FilterMode) {
-    if (mode === state.mode) return;
+  // Sorted ascending for computing presets (reports are sorted newest-first)
+  const sortedAsc = [...reports].reverse();
+  const newest = reports[0];
+  const oldest = sortedAsc[0];
 
-    if (mode === "single") {
+  function handleUIModeChange(newUIMode: UIMode) {
+    if (newUIMode === uiMode) return;
+
+    if (newUIMode === "single") {
       onChange({
-        mode,
+        mode: "single",
         currentId: state.currentId ?? reports[0]?.id ?? null,
         comparisonId: null,
         rangeFrom: null,
         rangeTo: null,
       });
-    } else if (mode === "compare") {
-      onChange({
-        mode,
-        currentId: state.currentId ?? reports[0]?.id ?? null,
-        comparisonId: reports.length > 1 ? reports[1].id : null,
-        rangeFrom: null,
-        rangeTo: null,
-      });
     } else {
-      // range
-      const oldest = reports[reports.length - 1];
-      const newest = reports[0];
+      // range — default to all data
       onChange({
-        mode,
+        mode: "range",
         currentId: null,
         comparisonId: null,
         rangeFrom: oldest ? reportToYYYYMM(oldest) : null,
@@ -77,30 +75,73 @@ export default function PeriodFilter({ state, onChange }: PeriodFilterProps) {
     }
   }
 
-  const monthOptions = getMonthOptions(reports);
+  /** Compute preset ranges based on available data */
+  function applyPreset(preset: string) {
+    if (!newest) return;
+    const newestYM = reportToYYYYMM(newest);
+    let fromYM: string;
+
+    if (preset === "trimestre") {
+      // 3 months back from newest
+      const d = new Date(newest.periodYear, newest.periodMonth - 1 - 2, 1);
+      fromYM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    } else if (preset === "semestre") {
+      // 6 months back from newest
+      const d = new Date(newest.periodYear, newest.periodMonth - 1 - 5, 1);
+      fromYM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    } else if (preset === "anno") {
+      // Current year of newest report
+      fromYM = `${newest.periodYear}-01`;
+    } else {
+      // all — oldest to newest
+      fromYM = oldest ? reportToYYYYMM(oldest) : newestYM;
+    }
+
+    // Clamp to available data range
+    const oldestYM = oldest ? reportToYYYYMM(oldest) : newestYM;
+    if (fromYM < oldestYM) fromYM = oldestYM;
+
+    onChange({
+      mode: "range",
+      currentId: null,
+      comparisonId: null,
+      rangeFrom: fromYM,
+      rangeTo: newestYM,
+    });
+  }
+
+  const presets = [
+    { key: "trimestre", label: "Ultimo trimestre" },
+    { key: "semestre", label: "Ultimo semestre" },
+    { key: "anno", label: "Anno corrente" },
+    { key: "tutti", label: "Tutti i dati" },
+  ];
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      {/* Mode toggle */}
-      <div className="flex gap-1 rounded-btn bg-white/[0.03] p-1">
-        {modes.map((m) => (
-          <button
-            key={m.key}
-            onClick={() => handleModeChange(m.key)}
-            className={`rounded-[6px] px-3 py-1.5 text-xs font-medium transition-colors ${
-              state.mode === m.key
-                ? "bg-accent-blue text-white"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Mode toggle */}
+        <div className="flex gap-1 rounded-btn bg-white/[0.03] p-1">
+          {([
+            { key: "single" as UIMode, label: "Mese singolo" },
+            { key: "range" as UIMode, label: "Periodo personalizzato" },
+          ]).map((m) => (
+            <button
+              key={m.key}
+              onClick={() => handleUIModeChange(m.key)}
+              className={`rounded-[6px] px-3 py-1.5 text-xs font-medium transition-colors ${
+                uiMode === m.key
+                  ? "bg-accent-blue text-white"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Dropdowns based on mode */}
-      <div className="flex items-center gap-2">
-        {state.mode === "single" && (
+        {/* Dropdowns */}
+        {uiMode === "single" && (
           <ReportDropdown
             reports={reports}
             value={state.currentId}
@@ -110,31 +151,8 @@ export default function PeriodFilter({ state, onChange }: PeriodFilterProps) {
           />
         )}
 
-        {state.mode === "compare" && (
-          <>
-            <ReportDropdown
-              reports={reports}
-              value={state.currentId}
-              onChange={(id) =>
-                onChange({ ...state, currentId: id })
-              }
-              label="Corrente"
-            />
-            <span className="text-xs text-text-dim">vs</span>
-            <ReportDropdown
-              reports={reports}
-              value={state.comparisonId}
-              onChange={(id) =>
-                onChange({ ...state, comparisonId: id })
-              }
-              excludeId={state.currentId}
-              label="Precedente"
-            />
-          </>
-        )}
-
-        {state.mode === "range" && (
-          <>
+        {uiMode === "range" && (
+          <div className="flex items-center gap-2">
             <MonthDropdown
               options={monthOptions}
               value={state.rangeFrom}
@@ -152,9 +170,24 @@ export default function PeriodFilter({ state, onChange }: PeriodFilterProps) {
               }
               label="A"
             />
-          </>
+          </div>
         )}
       </div>
+
+      {/* Quick presets — only in range mode */}
+      {uiMode === "range" && (
+        <div className="flex flex-wrap gap-1.5">
+          {presets.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => applyPreset(p.key)}
+              className="rounded-btn border border-border-card bg-white/[0.02] px-2.5 py-1 text-[11px] font-medium text-text-muted hover:border-accent-blue/40 hover:text-text-primary transition-colors"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

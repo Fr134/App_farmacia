@@ -114,6 +114,7 @@ export interface SerializedSectorData {
 
 export type ReportWithSectors = SerializedReport & {
   sectors: SerializedSectorData[];
+  aggregatedPeriods?: number;
 };
 
 export type AlertSeverity = "critical" | "warning" | "info" | "positive";

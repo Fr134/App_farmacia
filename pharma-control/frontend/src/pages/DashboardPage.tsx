@@ -16,7 +16,7 @@ import {
 import { getReport, getLatestReport, getAggregateReport } from "@/services/api";
 import { exportDashboardPdf } from "@/lib/exportPdf";
 import { useAlerts } from "@/hooks/useAlerts";
-import { MESI_DISPLAY, COLORS } from "@/lib/constants";
+import { MESI_DISPLAY, MESI_SHORT, COLORS } from "@/lib/constants";
 import {
   formatCurrency,
   formatPercent,
@@ -228,12 +228,26 @@ export default function DashboardPage() {
   // Comparison deltas
   const compAvgTicket = comp && comp.totalSales > 0 ? comp.totalRevenueGross / comp.totalSales : null;
 
-  // Build title
+  // Build title + subtitle
   let title: string;
+  let subtitle: string | null = null;
   if (isRangeMode && filterState.rangeFrom && filterState.rangeTo) {
-    title = `Dashboard Vendite — ${filterState.rangeFrom} \u2192 ${filterState.rangeTo}`;
+    // Parse YYYY-MM to short display
+    const parseYM = (ym: string) => {
+      const [y, m] = ym.split("-").map(Number);
+      return `${MESI_SHORT[m] ?? m} ${y}`;
+    };
+    const parseYMFull = (ym: string) => {
+      const [y, m] = ym.split("-").map(Number);
+      return `${MESI_DISPLAY[m] ?? m} ${y}`;
+    };
+    title = `Dashboard Vendite \u2014 ${parseYM(filterState.rangeFrom)} \u2013 ${parseYM(filterState.rangeTo)}`;
+    const count = r.aggregatedPeriods ?? 0;
+    if (count > 0) {
+      subtitle = `Dati aggregati: ${parseYMFull(filterState.rangeFrom)} \u2014 ${parseYMFull(filterState.rangeTo)} (${count} ${count === 1 ? "mese" : "mesi"})`;
+    }
   } else {
-    title = `Dashboard Vendite — ${monthName} ${r.periodYear}`;
+    title = `Dashboard Vendite \u2014 ${monthName} ${r.periodYear}`;
   }
 
   async function handleExportPdf() {
@@ -250,11 +264,16 @@ export default function DashboardPage() {
     <div ref={dashboardRef} className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-2.5 w-2.5 rounded-full bg-accent-green" />
-          <h1 className="text-lg font-semibold text-text-primary">
-            {title}
-          </h1>
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-accent-green" />
+            <h1 className="text-lg font-semibold text-text-primary">
+              {title}
+            </h1>
+          </div>
+          {subtitle && (
+            <p className="mt-1 ml-[22px] text-xs text-text-muted">{subtitle}</p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button

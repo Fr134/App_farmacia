@@ -36,3 +36,18 @@ export const MESI_DISPLAY: Record<number, string> = {
   11: "Novembre",
   12: "Dicembre",
 };
+
+export const MESI_SHORT: Record<number, string> = {
+  1: "Gen",
+  2: "Feb",
+  3: "Mar",
+  4: "Apr",
+  5: "Mag",
+  6: "Giu",
+  7: "Lug",
+  8: "Ago",
+  9: "Set",
+  10: "Ott",
+  11: "Nov",
+  12: "Dic",
+};

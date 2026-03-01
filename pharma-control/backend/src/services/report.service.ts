@@ -348,6 +348,7 @@ export async function getAggregate(
     totalPieces,
     totalSales,
     sectors,
+    aggregatedPeriods: reports.length,
   };
 }
 
