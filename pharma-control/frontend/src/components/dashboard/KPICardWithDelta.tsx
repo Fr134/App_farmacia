@@ -2,10 +2,13 @@ import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { formatPercent } from "@/lib/formatters";
 import { COLORS } from "@/lib/constants";
+import { useCountUp } from "@/hooks/useCountUp";
 
 interface KPICardWithDeltaProps {
   label: string;
   value: string;
+  rawValue?: number;
+  formatFn?: (n: number) => string;
   subtitle?: string;
   icon: LucideIcon;
   accentColor: string;
@@ -16,6 +19,8 @@ interface KPICardWithDeltaProps {
 export default function KPICardWithDelta({
   label,
   value,
+  rawValue,
+  formatFn,
   subtitle,
   icon: Icon,
   accentColor,
@@ -23,6 +28,8 @@ export default function KPICardWithDelta({
   delta,
 }: KPICardWithDeltaProps) {
   const hasDelta = delta != null && previousValue != null;
+  const animated = useCountUp(rawValue ?? 0);
+  const displayValue = rawValue != null && formatFn ? formatFn(animated) : value;
 
   return (
     <div className="relative overflow-hidden rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
@@ -40,7 +47,7 @@ export default function KPICardWithDelta({
         </div>
 
         <p className="font-mono text-[28px] font-bold leading-tight text-text-primary">
-          {value}
+          {displayValue}
         </p>
 
         {subtitle && (

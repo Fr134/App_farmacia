@@ -21,3 +21,24 @@
     opacity: 0.7;
   }
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* iOS safe area for bottom navigation */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly tap targets on mobile */
+@media (max-width: 640px) {
+  button, [role="listitem"] {
+    min-height: 44px;
+  }
+}

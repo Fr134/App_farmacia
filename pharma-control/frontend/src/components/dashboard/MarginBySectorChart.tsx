@@ -21,6 +21,9 @@ interface BarEntry {
   marginePct: number;
   ricaricoPct: number | null;
   margine: number | null;
+  valore: number;
+  valorePct: number | null;
+  rank: number;
   fill: string;
   "marginePct (prec.)"?: number;
 }
@@ -42,21 +45,34 @@ function CustomTooltip({
   const d = payload[0].payload;
 
   return (
-    <div className="rounded-btn border border-border-card bg-bg-card px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs font-medium text-text-primary">{d.name}</p>
-      <p className="font-mono text-xs" style={{ color: d.fill }}>
-        Margine %: {formatPercent(d.marginePct)}
-      </p>
-      {d.ricaricoPct !== null && (
+    <div className="rounded-btn border border-border-card bg-bg-card px-3 py-2 shadow-lg min-w-[160px]">
+      <div className="flex items-center justify-between gap-3 mb-1.5">
+        <p className="text-xs font-medium text-text-primary">{d.name}</p>
+        <span className="flex-shrink-0 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-bold text-text-dim">
+          #{d.rank}
+        </span>
+      </div>
+      <div className="space-y-0.5">
         <p className="font-mono text-xs text-text-muted">
-          Ricarico %: {formatPercent(d.ricaricoPct)}
+          Valore: {formatCurrency(d.valore)}
+          {d.valorePct !== null && (
+            <span className="text-text-dim"> ({formatPercent(d.valorePct)})</span>
+          )}
         </p>
-      )}
-      {d.margine !== null && (
-        <p className="font-mono text-xs text-text-muted">
-          Margine: {formatCurrency(d.margine)}
+        {d.margine !== null && (
+          <p className="font-mono text-xs" style={{ color: COLORS.accentGreen }}>
+            Margine: {formatCurrency(d.margine)}
+          </p>
+        )}
+        <p className="font-mono text-xs font-medium" style={{ color: d.fill }}>
+          Margine %: {formatPercent(d.marginePct)}
         </p>
-      )}
+        {d.ricaricoPct !== null && (
+          <p className="font-mono text-xs text-text-dim">
+            Ricarico %: {formatPercent(d.ricaricoPct)}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -67,6 +83,10 @@ export default function MarginBySectorChart({ sectors, comparisonSectors }: Prop
   );
 
   const hasComparison = comparisonSectors && comparisonSectors.length > 0;
+
+  // Rank by valore for tooltip display
+  const rankedByValore = [...sectors].sort((a, b) => b.valore - a.valore);
+  const rankMap = new Map(rankedByValore.map((s, i) => [s.tipologia, i + 1]));
 
   const data: BarEntry[] = sectors
     .filter(
@@ -81,6 +101,9 @@ export default function MarginBySectorChart({ sectors, comparisonSectors }: Prop
         marginePct: s.marginePct ?? 0,
         ricaricoPct: s.ricaricoPct,
         margine: s.margine,
+        valore: s.valore,
+        valorePct: s.valorePct,
+        rank: rankMap.get(s.tipologia) ?? 0,
         fill: getTrafficLightColor(s.marginePct ?? 0),
         ...(comp ? { "marginePct (prec.)": comp.marginePct ?? 0 } : {}),
       };

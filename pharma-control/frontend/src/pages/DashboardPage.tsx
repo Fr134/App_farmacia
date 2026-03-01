@@ -11,8 +11,10 @@ import {
   Upload,
   Loader2,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import { getReport, getLatestReport, getAggregateReport } from "@/services/api";
+import { exportDashboardPdf } from "@/lib/exportPdf";
 import { useAlerts } from "@/hooks/useAlerts";
 import { MESI_DISPLAY, COLORS } from "@/lib/constants";
 import {
@@ -36,6 +38,8 @@ import ChannelBreakdown from "@/components/dashboard/ChannelBreakdown";
 import VATAnalysis from "@/components/dashboard/VATAnalysis";
 import ComparisonSummary from "@/components/dashboard/ComparisonSummary";
 import DetailTable from "@/components/dashboard/DetailTable";
+import KPICardSkeleton from "@/components/ui/KPICardSkeleton";
+import ChartSkeleton from "@/components/ui/ChartSkeleton";
 import type { ReportWithSectors } from "@/types";
 
 export default function DashboardPage() {
@@ -65,6 +69,7 @@ export default function DashboardPage() {
   const [highlightedSector, setHighlightedSector] = useState<string | null>(null);
   const [distView, setDistView] = useState<"donut" | "treemap">("donut");
   const [detailOpen, setDetailOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Alerts (hooks must be called before any early return)
   const isRangeMode = filterState.mode === "range";
@@ -75,8 +80,9 @@ export default function DashboardPage() {
     alertCompareId
   );
 
-  // Sector list ref for scroll-to
+  // Refs
   const sectorListRef = useRef<HTMLDivElement>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   function handleAlertSectorClick(sector: string) {
     sectorListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -150,11 +156,30 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // Loading
+  // Loading skeleton
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent-blue" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-2.5 w-2.5 rounded-full bg-accent-blue animate-pulse" />
+          <div className="h-5 w-56 rounded bg-white/[0.06] animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <KPICardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => <KPICardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary p-5">
+            <div className="h-4 w-40 rounded bg-white/[0.06] animate-pulse mb-4" />
+            <ChartSkeleton />
+          </div>
+          <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary p-5">
+            <div className="h-4 w-40 rounded bg-white/[0.06] animate-pulse mb-4" />
+            <ChartSkeleton height={200} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -211,8 +236,18 @@ export default function DashboardPage() {
     title = `Dashboard Vendite — ${monthName} ${r.periodYear}`;
   }
 
+  async function handleExportPdf() {
+    if (!dashboardRef.current) return;
+    setExporting(true);
+    try {
+      await exportDashboardPdf(dashboardRef.current, title);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div ref={dashboardRef} className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -221,7 +256,21 @@ export default function DashboardPage() {
             {title}
           </h1>
         </div>
-        <PeriodFilter state={filterState} onChange={handleFilterChange} />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button
+            onClick={handleExportPdf}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-btn bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-text-muted hover:bg-white/[0.08] hover:text-text-primary transition-colors disabled:opacity-50"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Esporta PDF
+          </button>
+          <PeriodFilter state={filterState} onChange={handleFilterChange} />
+        </div>
       </div>
 
       {/* Comparison Summary */}
@@ -240,10 +289,12 @@ export default function DashboardPage() {
       )}
 
       {/* Row 1: 4 KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-pdf-section="kpi-row-1" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICardWithDelta
           label="Transato Lordo"
           value={formatCurrency(r.totalRevenueGross)}
+          rawValue={r.totalRevenueGross}
+          formatFn={formatCurrency}
           subtitle="IVA inclusa"
           icon={Banknote}
           accentColor={COLORS.accentBlue}
@@ -253,6 +304,8 @@ export default function DashboardPage() {
         <KPICardWithDelta
           label="Fatturato Netto"
           value={formatCurrency(r.totalRevenueNet)}
+          rawValue={r.totalRevenueNet}
+          formatFn={formatCurrency}
           subtitle={`di cui IVA ${formatCurrency(r.totalIva)}`}
           icon={FileText}
           accentColor={COLORS.accentCyan}
@@ -262,6 +315,8 @@ export default function DashboardPage() {
         <KPICardWithDelta
           label="Venduto"
           value={formatCurrency(r.totalRevenueGross)}
+          rawValue={r.totalRevenueGross}
+          formatFn={formatCurrency}
           subtitle={`${formatInteger(r.totalPieces)} pezzi \u00B7 ${formatInteger(r.totalSales)} vendite`}
           icon={ShoppingBag}
           accentColor={COLORS.accentGreen}
@@ -271,6 +326,8 @@ export default function DashboardPage() {
         <KPICardWithDelta
           label="Costo del Venduto"
           value={formatCurrency(r.totalCost)}
+          rawValue={r.totalCost}
+          formatFn={formatCurrency}
           subtitle={`${formatPercent(costPct)} del transato`}
           icon={Wallet}
           accentColor={COLORS.accentAmber}
@@ -280,10 +337,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Row 2: 3 KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-pdf-section="kpi-row-2" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KPICardWithDelta
           label="Margine Lordo"
           value={formatCurrency(r.totalMargin)}
+          rawValue={r.totalMargin}
+          formatFn={formatCurrency}
           subtitle={`${formatPercent(r.totalMarginPct)} sul venduto`}
           icon={TrendingUp}
           accentColor={COLORS.accentGreen}
@@ -293,6 +352,8 @@ export default function DashboardPage() {
         <KPICardWithDelta
           label="Margine %"
           value={formatPercent(r.totalMarginPct)}
+          rawValue={r.totalMarginPct}
+          formatFn={formatPercent}
           subtitle={`Ricarico ${formatPercent(r.totalMarkupPct)}`}
           icon={Percent}
           accentColor={COLORS.accentPurple}
@@ -302,6 +363,8 @@ export default function DashboardPage() {
         <KPICardWithDelta
           label="Scontrino Medio"
           value={formatCurrency(avgTicket)}
+          rawValue={avgTicket}
+          formatFn={formatCurrency}
           subtitle={`${piecesPerSale.toFixed(1).replace(".", ",")} pezzi/vendita`}
           icon={CreditCard}
           accentColor={COLORS.accentBlue}
@@ -311,7 +374,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div data-pdf-section="charts" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard title="Top 5 &middot; Costo vs Margine">
           <Top5CostMarginChart
             sectors={r.sectors}

@@ -28,17 +28,28 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-btn border border-border-card bg-bg-card px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs font-medium text-text-primary">{label}</p>
-      {payload.map((entry) => (
-        <p
-          key={entry.name}
-          className="font-mono text-xs"
-          style={{ color: entry.color }}
-        >
-          {entry.name}: {formatCurrency(entry.value)}
-        </p>
-      ))}
+    <div className="rounded-btn border border-border-card bg-bg-card px-3 py-2 shadow-lg min-w-[150px]">
+      <p className="mb-1.5 text-xs font-medium text-text-primary">{label}</p>
+      <div className="space-y-0.5">
+        {payload
+          .filter((e) => !e.name.includes("prec."))
+          .map((entry) => (
+            <p
+              key={entry.name}
+              className="font-mono text-xs"
+              style={{ color: entry.color }}
+            >
+              {entry.name}: {formatCurrency(entry.value)}
+            </p>
+          ))}
+        {payload.filter((e) => !e.name.includes("prec.")).length > 1 && (
+          <p className="font-mono text-xs text-text-primary border-t border-border-card pt-1 mt-1">
+            Totale: {formatCurrency(
+              payload.filter((e) => !e.name.includes("prec.")).reduce((s, e) => s + e.value, 0)
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

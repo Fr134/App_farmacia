@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { CHART_COLORS, COLORS } from "@/lib/constants";
 import {
@@ -18,6 +18,9 @@ const CODICE_AGGANCIO = "Codice di aggancio";
 
 export default function SectorList({ sectors, highlightedSector }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Auto-expand highlighted sector
   useEffect(() => {
@@ -43,8 +46,34 @@ export default function SectorList({ sectors, highlightedSector }: Props) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const len = sorted.length;
+      if (len === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = focusedIndex < len - 1 ? focusedIndex + 1 : 0;
+        setFocusedIndex(next);
+        itemRefs.current[next]?.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = focusedIndex > 0 ? focusedIndex - 1 : len - 1;
+        setFocusedIndex(prev);
+        itemRefs.current[prev]?.focus();
+      } else if (e.key === "Enter" && focusedIndex >= 0) {
+        e.preventDefault();
+        toggleExpand(sorted[focusedIndex].id);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setExpandedId(null);
+      }
+    },
+    [focusedIndex, sorted]
+  );
+
   return (
-    <div className="space-y-1.5">
+    <div ref={containerRef} className="space-y-1.5" onKeyDown={handleKeyDown} role="list">
       {sorted.map((sector, index) => {
         const isAggancio = sector.tipologia === CODICE_AGGANCIO;
         const isExpanded = expandedId === sector.id;
@@ -72,8 +101,12 @@ export default function SectorList({ sectors, highlightedSector }: Props) {
           >
             {/* Row */}
             <button
-              onClick={() => toggleExpand(sector.id)}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left"
+              ref={(el) => { itemRefs.current[index] = el; }}
+              onClick={() => { setFocusedIndex(index); toggleExpand(sector.id); }}
+              onFocus={() => setFocusedIndex(index)}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue/50 focus-visible:rounded-btn"
+              role="listitem"
+              aria-expanded={isExpanded}
             >
               {/* Rank badge */}
               <div
