@@ -10,6 +10,7 @@ import {
   CreditCard,
   Upload,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { getReport, getLatestReport, getAggregateReport } from "@/services/api";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -27,11 +28,14 @@ import type { FilterMode, PeriodFilterState } from "@/components/dashboard/Perio
 import AlertPanel from "@/components/dashboard/AlertPanel";
 import Top5CostMarginChart from "@/components/dashboard/Top5CostMarginChart";
 import DistributionChart from "@/components/dashboard/DistributionChart";
+import RevenueTreemap from "@/components/dashboard/RevenueTreemap";
 import MarginBySectorChart from "@/components/dashboard/MarginBySectorChart";
+import MarginWaterfall from "@/components/dashboard/MarginWaterfall";
 import SectorList from "@/components/dashboard/SectorList";
 import ChannelBreakdown from "@/components/dashboard/ChannelBreakdown";
 import VATAnalysis from "@/components/dashboard/VATAnalysis";
 import ComparisonSummary from "@/components/dashboard/ComparisonSummary";
+import DetailTable from "@/components/dashboard/DetailTable";
 import type { ReportWithSectors } from "@/types";
 
 export default function DashboardPage() {
@@ -58,6 +62,27 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
+  const [highlightedSector, setHighlightedSector] = useState<string | null>(null);
+  const [distView, setDistView] = useState<"donut" | "treemap">("donut");
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // Alerts (hooks must be called before any early return)
+  const isRangeMode = filterState.mode === "range";
+  const alertReportId = !isRangeMode && report ? report.id : null;
+  const alertCompareId = filterState.mode === "compare" && compReport ? compReport.id : null;
+  const { alerts, summary: alertSummary, loading: alertsLoading } = useAlerts(
+    alertReportId,
+    alertCompareId
+  );
+
+  // Sector list ref for scroll-to
+  const sectorListRef = useRef<HTMLDivElement>(null);
+
+  function handleAlertSectorClick(sector: string) {
+    sectorListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setHighlightedSector(sector);
+    setTimeout(() => setHighlightedSector(null), 3000);
+  }
 
   // Sync filter changes to URL params
   function handleFilterChange(newState: PeriodFilterState) {
@@ -161,30 +186,9 @@ export default function DashboardPage() {
     );
   }
 
-  // Alerts
-  const isRangeMode = filterState.mode === "range";
-  const alertReportId = !isRangeMode && report ? report.id : null;
-  const alertCompareId = filterState.mode === "compare" && compReport ? compReport.id : null;
-  const { alerts, summary: alertSummary, loading: alertsLoading } = useAlerts(
-    alertReportId,
-    alertCompareId
-  );
-
-  // Sector list ref for scroll-to
-  const sectorListRef = useRef<HTMLDivElement>(null);
-
-  function handleAlertSectorClick(sector: string) {
-    sectorListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    // The SectorList will be highlighted via the highlightedSector prop
-    setHighlightedSector(sector);
-    setTimeout(() => setHighlightedSector(null), 3000);
-  }
-  const [highlightedSector, setHighlightedSector] = useState<string | null>(null);
-
   // Derived values
   const r = report;
   const comp = filterState.mode === "compare" ? compReport : null;
-  const isRange = filterState.mode === "range";
 
   const monthName = MESI_DISPLAY[r.periodMonth] ?? `${r.periodMonth}`;
   const costPct =
@@ -201,7 +205,7 @@ export default function DashboardPage() {
 
   // Build title
   let title: string;
-  if (isRange && filterState.rangeFrom && filterState.rangeTo) {
+  if (isRangeMode && filterState.rangeFrom && filterState.rangeTo) {
     title = `Dashboard Vendite — ${filterState.rangeFrom} \u2192 ${filterState.rangeTo}`;
   } else {
     title = `Dashboard Vendite — ${monthName} ${r.periodYear}`;
@@ -226,7 +230,7 @@ export default function DashboardPage() {
       )}
 
       {/* Alert Panel */}
-      {!isRange && (
+      {!isRangeMode && (
         <AlertPanel
           alerts={alerts}
           summary={alertSummary}
@@ -314,11 +318,34 @@ export default function DashboardPage() {
             comparisonSectors={comp?.sectors}
           />
         </SectionCard>
-        <SectionCard title="Distribuzione Venduto/Margine">
-          <DistributionChart
-            sectors={r.sectors}
-            comparisonSectors={comp?.sectors}
-          />
+        <SectionCard
+          title="Distribuzione Venduto/Margine"
+          rightAction={
+            <div className="flex gap-1 rounded-btn bg-white/[0.03] p-1">
+              {(["donut", "treemap"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setDistView(v)}
+                  className={`rounded-[6px] px-3 py-1 text-xs font-medium transition-colors ${
+                    distView === v
+                      ? "bg-accent-blue text-white"
+                      : "text-text-muted hover:text-text-primary"
+                  }`}
+                >
+                  {v === "donut" ? "Donut" : "Treemap"}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          {distView === "donut" ? (
+            <DistributionChart
+              sectors={r.sectors}
+              comparisonSectors={comp?.sectors}
+            />
+          ) : (
+            <RevenueTreemap sectors={r.sectors} />
+          )}
         </SectionCard>
       </div>
 
@@ -335,10 +362,42 @@ export default function DashboardPage() {
         <ChannelBreakdown sectors={r.sectors} />
       </SectionCard>
 
+      {/* Margin Waterfall */}
+      <SectionCard title="Costruzione Margine" subtitle="Contributo di ogni settore al margine totale">
+        <MarginWaterfall sectors={r.sectors} />
+      </SectionCard>
+
       {/* VAT Analysis */}
       <SectionCard title="Analisi IVA" subtitle="Dettaglio imponibile e imposta sul valore aggiunto">
         <VATAnalysis sectors={r.sectors} />
       </SectionCard>
+
+      {/* Detail Table — collapsible */}
+      <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary overflow-hidden">
+        <button
+          onClick={() => setDetailOpen(!detailOpen)}
+          className="flex w-full items-center justify-between px-5 py-4"
+        >
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary">
+              Tabella Dettagliata
+            </h3>
+            <p className="mt-0.5 text-[12px] text-text-dim">
+              Tutti i settori con tutte le metriche &middot; Clicca sulle colonne per ordinare
+            </p>
+          </div>
+          <ChevronDown
+            className={`h-4 w-4 text-text-dim transition-transform ${
+              detailOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {detailOpen && (
+          <div className="px-5 pb-5">
+            <DetailTable sectors={r.sectors} />
+          </div>
+        )}
+      </div>
 
       {/* Sector List */}
       <div ref={sectorListRef}>
