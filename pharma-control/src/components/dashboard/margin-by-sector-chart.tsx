@@ -15,6 +15,7 @@ import type { SectorData } from "@/types";
 
 interface Props {
   sectors: SectorData[];
+  comparisonSectors?: SectorData[];
 }
 
 interface BarEntry {
@@ -23,6 +24,7 @@ interface BarEntry {
   ricaricoPct: number | null;
   margine: number | null;
   fill: string;
+  "marginePct (prec.)"?: number;
 }
 
 function getTrafficLightColor(pct: number): string {
@@ -65,22 +67,34 @@ function CustomTooltip({
   );
 }
 
-export default function MarginBySectorChart({ sectors }: Props) {
+export default function MarginBySectorChart({ sectors, comparisonSectors }: Props) {
+  const compMap = new Map(
+    (comparisonSectors ?? []).map((s) => [s.tipologia, s])
+  );
+
+  const hasComparison = comparisonSectors && comparisonSectors.length > 0;
+
   const data: BarEntry[] = sectors
     .filter(
       (s) =>
         s.valore > 500 && s.marginePct !== null && s.marginePct > -50
     )
     .sort((a, b) => (b.marginePct ?? 0) - (a.marginePct ?? 0))
-    .map((s) => ({
-      name: truncName(s.tipologia),
-      marginePct: s.marginePct ?? 0,
-      ricaricoPct: s.ricaricoPct,
-      margine: s.margine,
-      fill: getTrafficLightColor(s.marginePct ?? 0),
-    }));
+    .map((s) => {
+      const comp = compMap.get(s.tipologia);
+      return {
+        name: truncName(s.tipologia),
+        marginePct: s.marginePct ?? 0,
+        ricaricoPct: s.ricaricoPct,
+        margine: s.margine,
+        fill: getTrafficLightColor(s.marginePct ?? 0),
+        ...(comp ? { "marginePct (prec.)": comp.marginePct ?? 0 } : {}),
+      };
+    });
 
-  const chartHeight = Math.max(data.length * 38 + 40, 200);
+  const barSize = hasComparison ? 14 : 20;
+  const rowHeight = hasComparison ? 44 : 38;
+  const chartHeight = Math.max(data.length * rowHeight + 40, 200);
 
   return (
     <ResponsiveContainer width="100%" height={chartHeight}>
@@ -102,11 +116,20 @@ export default function MarginBySectorChart({ sectors }: Props) {
           tickLine={false}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-        <Bar dataKey="marginePct" radius={[0, 4, 4, 0]} barSize={20}>
+        <Bar dataKey="marginePct" radius={[0, 4, 4, 0]} barSize={barSize}>
           {data.map((entry, i) => (
             <Cell key={i} fill={entry.fill} />
           ))}
         </Bar>
+        {hasComparison && (
+          <Bar
+            dataKey="marginePct (prec.)"
+            radius={[0, 4, 4, 0]}
+            barSize={barSize}
+            fill={COLORS.textDim}
+            opacity={0.3}
+          />
+        )}
       </BarChart>
     </ResponsiveContainer>
   );

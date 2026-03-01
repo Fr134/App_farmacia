@@ -15,6 +15,7 @@ import type { SectorData } from "@/types";
 
 interface Props {
   sectors: SectorData[];
+  comparisonSectors?: SectorData[];
 }
 
 function truncName(name: string, max: number = 18): string {
@@ -48,18 +49,34 @@ function CustomTooltip({
   );
 }
 
-export default function Top5CostMarginChart({ sectors }: Props) {
-  const data = [...sectors]
+export default function Top5CostMarginChart({ sectors, comparisonSectors }: Props) {
+  const top5 = [...sectors]
     .sort((a, b) => b.valore - a.valore)
-    .slice(0, 5)
-    .map((s) => ({
+    .slice(0, 5);
+
+  const compMap = new Map(
+    (comparisonSectors ?? []).map((s) => [s.tipologia, s])
+  );
+
+  const data = top5.map((s) => {
+    const comp = compMap.get(s.tipologia);
+    return {
       name: truncName(s.tipologia),
       "Costo Venduto": s.costoVenduto ?? 0,
       Margine: s.margine ?? 0,
-    }));
+      ...(comp
+        ? {
+            "Costo Venduto (prec.)": comp.costoVenduto ?? 0,
+            "Margine (prec.)": comp.margine ?? 0,
+          }
+        : {}),
+    };
+  });
+
+  const hasComparison = comparisonSectors && comparisonSectors.length > 0;
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={hasComparison ? 300 : 260}>
       <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20 }}>
         <XAxis
           type="number"
@@ -82,16 +99,34 @@ export default function Top5CostMarginChart({ sectors }: Props) {
         />
         <Bar
           dataKey="Costo Venduto"
-          stackId="a"
+          stackId="current"
           fill={COLORS.accentAmber}
           radius={[0, 0, 0, 0]}
         />
         <Bar
           dataKey="Margine"
-          stackId="a"
+          stackId="current"
           fill={COLORS.accentGreen}
           radius={[0, 4, 4, 0]}
         />
+        {hasComparison && (
+          <Bar
+            dataKey="Costo Venduto (prec.)"
+            stackId="prev"
+            fill={COLORS.accentAmber}
+            opacity={0.3}
+            radius={[0, 0, 0, 0]}
+          />
+        )}
+        {hasComparison && (
+          <Bar
+            dataKey="Margine (prec.)"
+            stackId="prev"
+            fill={COLORS.accentGreen}
+            opacity={0.3}
+            radius={[0, 4, 4, 0]}
+          />
+        )}
       </BarChart>
     </ResponsiveContainer>
   );

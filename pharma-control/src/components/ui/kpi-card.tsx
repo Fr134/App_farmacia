@@ -1,6 +1,9 @@
 "use client";
 
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { formatChange } from "@/lib/formatters";
+import { COLORS } from "@/lib/constants";
 
 interface KPICardProps {
   label: string;
@@ -8,6 +11,7 @@ interface KPICardProps {
   subtitle?: string;
   icon: LucideIcon;
   accentColor: string;
+  change?: number | null;
 }
 
 export default function KPICard({
@@ -16,6 +20,7 @@ export default function KPICard({
   subtitle,
   icon: Icon,
   accentColor,
+  change,
 }: KPICardProps) {
   return (
     <div
@@ -40,6 +45,29 @@ export default function KPICard({
 
         {subtitle && (
           <p className="mt-1.5 text-[12px] text-text-dim">{subtitle}</p>
+        )}
+
+        {change != null && (
+          <div
+            className="mt-2 flex items-center gap-1"
+            style={{
+              color:
+                change > 0
+                  ? COLORS.accentGreen
+                  : change < 0
+                    ? COLORS.accentRed
+                    : COLORS.textDim,
+            }}
+          >
+            {change > 0 ? (
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            ) : change < 0 ? (
+              <ArrowDownRight className="h-3.5 w-3.5" />
+            ) : null}
+            <span className="font-mono text-xs font-medium">
+              {formatChange(change)} vs prec.
+            </span>
+          </div>
         )}
       </div>
     </div>

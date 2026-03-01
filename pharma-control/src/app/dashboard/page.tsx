@@ -27,10 +27,21 @@ import Top5CostMarginChart from "@/components/dashboard/top5-cost-margin-chart";
 import DistributionChart from "@/components/dashboard/distribution-chart";
 import MarginBySectorChart from "@/components/dashboard/margin-by-sector-chart";
 import SectorList from "@/components/dashboard/sector-list";
+import ComparisonSummary from "@/components/dashboard/comparison-summary";
+
+function pctChange(curr: number, prev: number): number | null {
+  if (prev === 0) return curr === 0 ? 0 : 100;
+  return ((curr - prev) / Math.abs(prev)) * 100;
+}
 
 export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [comparisonId, setComparisonId] = useState<string | null>(null);
   const { report, loading, error, empty } = useReport(selectedId);
+  const {
+    report: compReport,
+    loading: compLoading,
+  } = useReport(comparisonId);
 
   // Loading
   if (loading) {
@@ -70,6 +81,7 @@ export default function DashboardPage() {
 
   // Derived values
   const r = report;
+  const comp = comparisonId && !compLoading ? compReport : null;
   const monthName = MESI_DISPLAY[r.periodMonth] ?? `${r.periodMonth}`;
   const costPct =
     r.totalRevenueGross > 0
@@ -79,6 +91,19 @@ export default function DashboardPage() {
     r.totalSales > 0 ? r.totalRevenueGross / r.totalSales : 0;
   const piecesPerSale =
     r.totalSales > 0 ? r.totalPieces / r.totalSales : 0;
+
+  // Comparison % changes (null when no comparison)
+  const chgRevenueGross = comp ? pctChange(r.totalRevenueGross, comp.totalRevenueGross) : null;
+  const chgRevenueNet = comp ? pctChange(r.totalRevenueNet, comp.totalRevenueNet) : null;
+  const chgPieces = comp ? pctChange(r.totalPieces, comp.totalPieces) : null;
+  const chgCost = comp ? pctChange(r.totalCost, comp.totalCost) : null;
+  const chgMargin = comp ? pctChange(r.totalMargin, comp.totalMargin) : null;
+  const chgMarginPct = comp ? r.totalMarginPct - comp.totalMarginPct : null;
+  const compAvgTicket = comp && comp.totalSales > 0 ? comp.totalRevenueGross / comp.totalSales : null;
+  const chgAvgTicket = comp && compAvgTicket ? pctChange(avgTicket, compAvgTicket) : null;
+
+  // Current report ID for excludeId
+  const currentReportId = r.id;
 
   return (
     <div className="space-y-6">
@@ -90,12 +115,27 @@ export default function DashboardPage() {
             Dashboard Vendite — {monthName} {r.periodYear}
           </h1>
         </div>
-        <PeriodSelector
-          currentMonth={r.periodMonth}
-          currentYear={r.periodYear}
-          onSelect={setSelectedId}
-        />
+        <div className="flex items-center gap-2">
+          <PeriodSelector
+            currentMonth={r.periodMonth}
+            currentYear={r.periodYear}
+            onSelect={setSelectedId}
+          />
+          <span className="text-xs text-text-dim">vs</span>
+          <PeriodSelector
+            currentMonth={0}
+            currentYear={0}
+            onSelect={(id) => setComparisonId(id || null)}
+            excludeId={currentReportId}
+            placeholder="Nessun confronto"
+          />
+        </div>
       </div>
+
+      {/* Comparison Summary */}
+      {comp && (
+        <ComparisonSummary current={r} comparison={comp} />
+      )}
 
       {/* Row 1: 4 KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -105,6 +145,7 @@ export default function DashboardPage() {
           subtitle="IVA inclusa"
           icon={Banknote}
           accentColor={COLORS.accentBlue}
+          change={chgRevenueGross}
         />
         <KPICard
           label="Fatturato Netto"
@@ -112,6 +153,7 @@ export default function DashboardPage() {
           subtitle={`di cui IVA ${formatCurrency(r.totalIva)}`}
           icon={FileText}
           accentColor={COLORS.accentCyan}
+          change={chgRevenueNet}
         />
         <KPICard
           label="Venduto"
@@ -119,6 +161,7 @@ export default function DashboardPage() {
           subtitle={`${formatInteger(r.totalPieces)} pezzi · ${formatInteger(r.totalSales)} vendite`}
           icon={ShoppingBag}
           accentColor={COLORS.accentGreen}
+          change={chgPieces}
         />
         <KPICard
           label="Costo del Venduto"
@@ -126,6 +169,7 @@ export default function DashboardPage() {
           subtitle={`${formatPercent(costPct)} del transato`}
           icon={Wallet}
           accentColor={COLORS.accentAmber}
+          change={chgCost}
         />
       </div>
 
@@ -137,6 +181,7 @@ export default function DashboardPage() {
           subtitle={`${formatPercent(r.totalMarginPct)} sul venduto`}
           icon={TrendingUp}
           accentColor={COLORS.accentGreen}
+          change={chgMargin}
         />
         <KPICard
           label="Margine %"
@@ -144,6 +189,7 @@ export default function DashboardPage() {
           subtitle={`Ricarico ${formatPercent(r.totalMarkupPct)}`}
           icon={Percent}
           accentColor={COLORS.accentPurple}
+          change={chgMarginPct}
         />
         <KPICard
           label="Scontrino Medio"
@@ -151,13 +197,17 @@ export default function DashboardPage() {
           subtitle={`${piecesPerSale.toFixed(1).replace(".", ",")} pezzi/vendita`}
           icon={CreditCard}
           accentColor={COLORS.accentBlue}
+          change={chgAvgTicket}
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard title="Top 5 · Costo vs Margine">
-          <Top5CostMarginChart sectors={r.sectors} />
+          <Top5CostMarginChart
+            sectors={r.sectors}
+            comparisonSectors={comp?.sectors}
+          />
         </SectionCard>
         <SectionCard title="Distribuzione Venduto/Margine">
           <DistributionChart sectors={r.sectors} />
@@ -166,7 +216,10 @@ export default function DashboardPage() {
 
       {/* Full-width Margin Chart */}
       <SectionCard title="Margine % per Settore">
-        <MarginBySectorChart sectors={r.sectors} />
+        <MarginBySectorChart
+          sectors={r.sectors}
+          comparisonSectors={comp?.sectors}
+        />
       </SectionCard>
 
       {/* Sector List */}

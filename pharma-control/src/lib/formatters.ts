@@ -45,6 +45,11 @@ export function formatInteger(n: number): string {
   return integerFormatter.format(n);
 }
 
+export function formatChange(n: number): string {
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${percentFormatter.format(n)}%`;
+}
+
 export function formatCompact(n: number): string {
   const abs = Math.abs(n);
   const sign = n < 0 ? "-" : "";
