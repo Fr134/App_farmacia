@@ -9,7 +9,16 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: "Richiesta non valida. Inviare un file multipart." },
+        { status: 400 }
+      );
+    }
+
     const file = formData.get("file");
 
     // 1. Check file presence
@@ -81,11 +90,12 @@ export async function POST(request: NextRequest) {
     // 8. Validate parsed data
     const validation = validateCsvData(parsed);
     if (!validation.valid) {
+      const errorDetail = validation.errors.join("; ");
       return NextResponse.json<ApiResponse<{ errors: string[] }>>(
         {
           success: false,
           data: { errors: validation.errors },
-          error: "Validazione fallita",
+          error: `Validazione fallita: ${errorDetail}`,
         },
         { status: 400 }
       );

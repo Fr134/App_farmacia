@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, FileSpreadsheet } from "lucide-react";
+import { Trash2, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { useReports } from "@/hooks/use-reports";
 import { deleteReport } from "@/lib/api";
 import { MESI_DISPLAY } from "@/lib/constants";
@@ -16,18 +16,23 @@ function formatDate(iso: string): string {
 }
 
 export default function UploadHistory() {
-  const { reports, loading, refetch } = useReports();
+  const { reports, loading, error, refetch } = useReports();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
     setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteReport(id);
       setConfirmId(null);
       refetch();
-    } catch {
-      // Error silently handled — report stays in list
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Errore durante l'eliminazione"
+      );
+      setConfirmId(null);
     } finally {
       setDeleting(false);
     }
@@ -38,6 +43,21 @@ export default function UploadHistory() {
       <p className="py-8 text-center text-sm text-text-dim">
         Caricamento...
       </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-8">
+        <AlertCircle className="h-8 w-8 text-accent-red" />
+        <p className="text-sm text-accent-red">{error}</p>
+        <button
+          onClick={refetch}
+          className="text-xs text-accent-blue hover:underline"
+        >
+          Riprova
+        </button>
+      </div>
     );
   }
 
@@ -52,6 +72,12 @@ export default function UploadHistory() {
 
   return (
     <div className="space-y-2">
+      {deleteError && (
+        <div className="rounded-btn border border-accent-red/30 bg-accent-red/[0.05] px-3 py-2 text-xs text-accent-red">
+          {deleteError}
+        </div>
+      )}
+
       {reports.map((r) => {
         const monthName = MESI_DISPLAY[r.periodMonth] ?? `${r.periodMonth}`;
         const isConfirming = confirmId === r.id;

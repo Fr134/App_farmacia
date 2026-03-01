@@ -8,8 +8,19 @@ import type {
 const BASE_URL = "/api";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, init);
-  const json: ApiResponse<T> = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${url}`, init);
+  } catch {
+    throw new Error("Impossibile connettersi al server");
+  }
+
+  let json: ApiResponse<T>;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(`Errore del server (HTTP ${res.status})`);
+  }
 
   if (!json.success) {
     throw new Error(json.error ?? "Errore sconosciuto");

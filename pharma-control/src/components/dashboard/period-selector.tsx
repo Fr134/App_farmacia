@@ -14,17 +14,21 @@ export default function PeriodSelector({
   currentYear,
   onSelect,
 }: PeriodSelectorProps) {
-  const { reports } = useReports();
+  const { reports, loading } = useReports();
+
+  if (loading || reports.length === 0) return null;
 
   const currentValue =
     reports.find(
       (r) => r.periodMonth === currentMonth && r.periodYear === currentYear
-    )?.id ?? "";
+    )?.id ?? reports[0]?.id ?? "";
 
   return (
     <select
       value={currentValue}
-      onChange={(e) => onSelect(e.target.value)}
+      onChange={(e) => {
+        if (e.target.value) onSelect(e.target.value);
+      }}
       className="rounded-btn border border-border-card bg-bg-card px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-blue"
     >
       {reports.map((r) => (

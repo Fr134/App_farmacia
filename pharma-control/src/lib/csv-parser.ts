@@ -118,11 +118,13 @@ export function parseCsvFile(buffer: Buffer, filename: string): ParsedReport {
   // Parse data rows
   const sectors: ParsedSector[] = [];
   let totals: ParsedTotals | null = null;
+  let skippedRows = 0;
 
   for (let i = 1; i < lines.length; i++) {
     const columns = lines[i].split(";");
 
     if (columns.length !== EXPECTED_COLUMNS) {
+      skippedRows++;
       continue;
     }
 
@@ -143,6 +145,12 @@ export function parseCsvFile(buffer: Buffer, filename: string): ParsedReport {
   if (!totals) {
     throw new Error(
       `Riga "${TOTALE_PREFIX}" non trovata nel file. Il file potrebbe essere incompleto.`
+    );
+  }
+
+  if (skippedRows > 0) {
+    console.warn(
+      `CSV parser: ${skippedRows} righe ignorate (numero colonne errato)`
     );
   }
 
