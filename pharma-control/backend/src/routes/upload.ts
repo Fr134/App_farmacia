@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { createHash } from "crypto";
 import { asyncHandler } from "../middleware/async-handler";
+import { authenticate, authorize } from "../middleware/auth";
 import { parseCsvFile } from "../services/csv-parser";
 import { validateCsvData } from "../services/csv-validator";
 import * as reportService from "../services/report.service";
@@ -39,8 +40,11 @@ function handleMulterError(err: Error, _req: Request, res: Response, next: NextF
 
 const router = Router();
 
+// Upload requires admin role
 router.post(
   "/",
+  authenticate,
+  authorize("admin"),
   upload.single("file"),
   handleMulterError,
   asyncHandler(async (req, res) => {

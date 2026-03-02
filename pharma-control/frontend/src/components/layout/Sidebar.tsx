@@ -1,18 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, X } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Users, LogOut, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
 }
 
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/upload", label: "Carica Report", icon: Upload },
-] as const;
-
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { pathname } = useLocation();
+  const { user, isAdmin, logout } = useAuth();
+
+  const navItems = [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
+    { to: "/upload", label: "Carica Report", icon: Upload, show: true },
+    { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
+  ];
 
   return (
     <>
@@ -58,33 +61,59 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-            const isActive = pathname === to;
-            return (
-              <Link
-                key={to}
-                to={to}
-                onClick={onClose}
-                className={`
-                  flex items-center gap-3 rounded-btn px-3 py-2.5 mb-1
-                  text-sm font-medium transition-colors
-                  ${
-                    isActive
-                      ? "border-l-2 border-accent-blue bg-accent-blue/10 text-text-primary"
-                      : "border-l-2 border-transparent text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
-                  }
-                `}
-              >
-                <Icon className="h-[18px] w-[18px]" />
-                {label}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => item.show)
+            .map(({ to, label, icon: Icon }) => {
+              const isActive = pathname === to;
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={onClose}
+                  className={`
+                    flex items-center gap-3 rounded-btn px-3 py-2.5 mb-1
+                    text-sm font-medium transition-colors
+                    ${
+                      isActive
+                        ? "border-l-2 border-accent-blue bg-accent-blue/10 text-text-primary"
+                        : "border-l-2 border-transparent text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
+                    }
+                  `}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                  {label}
+                </Link>
+              );
+            })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 pb-5">
-          <p className="text-[10px] text-text-dim">v1.0 · DottHouse.ai</p>
+        {/* User info + logout */}
+        <div className="border-t border-border-card px-4 py-4">
+          {user && (
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-text-primary">
+                  {user.name}
+                </p>
+                <span
+                  className={`inline-block mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    user.role === "admin"
+                      ? "bg-accent-purple/15 text-accent-purple"
+                      : "bg-accent-blue/15 text-accent-blue"
+                  }`}
+                >
+                  {user.role === "admin" ? "Admin" : "Viewer"}
+                </span>
+              </div>
+              <button
+                onClick={logout}
+                className="rounded-btn p-2 text-text-dim hover:bg-accent-red/10 hover:text-accent-red transition-colors"
+                title="Esci"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>

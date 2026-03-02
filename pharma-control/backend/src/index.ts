@@ -1,7 +1,10 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import healthRouter from "./routes/health";
+import authRouter from "./routes/auth";
+import usersRouter from "./routes/users";
 import reportsRouter from "./routes/reports";
 import uploadRouter from "./routes/upload";
 import { errorHandler } from "./middleware/error-handler";
@@ -17,9 +20,12 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/upload", uploadRouter);
 

@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  name        String
+  role        String    @default("viewer")
+  created_at  DateTime  @default(now())
+  last_login  DateTime?
+}
+
 model Report {
   id              String   @id @default(cuid())
   filename        String

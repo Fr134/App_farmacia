@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/async-handler";
+import { authenticate, authorize } from "../middleware/auth";
 import * as reportService from "../services/report.service";
 import { generateAlerts } from "../services/alert-engine";
 
 const router = Router();
+
+// All report routes require authentication
+router.use(authenticate);
 
 // GET /api/reports — list all reports
 router.get(
@@ -137,9 +141,10 @@ router.get(
   })
 );
 
-// DELETE /api/reports/:id — delete a report
+// DELETE /api/reports/:id — delete a report (admin only)
 router.delete(
   "/:id",
+  authorize("admin"),
   asyncHandler(async (req, res) => {
     const deleted = await reportService.deleteById(req.params.id);
 

@@ -11,9 +11,21 @@ const BASE_URL = "/api";
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}${url}`, init);
+    res = await fetch(`${BASE_URL}${url}`, {
+      ...init,
+      credentials: "include",
+    });
   } catch {
     throw new Error("Impossibile connettersi al server");
+  }
+
+  // On 401, redirect to login
+  if (res.status === 401) {
+    // Only redirect if we're not already on the login page
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+    throw new Error("Non autenticato");
   }
 
   let json: ApiResponse<T>;
@@ -30,6 +42,29 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return json.data as T;
 }
 
+// Auth
+export interface LoginResponse {
+  token: string;
+  user: { id: string; email: string; name: string; role: string };
+}
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  return request<LoginResponse>("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function logout(): Promise<void> {
+  await request("/auth/logout", { method: "POST" });
+}
+
+export async function getMe(): Promise<{ id: string; email: string; name: string; role: string }> {
+  return request("/auth/me");
+}
+
+// Reports
 export async function getReports(): Promise<ReportSummary[]> {
   return request<ReportSummary[]>("/reports");
 }
@@ -71,4 +106,46 @@ export async function getAlerts(
 
 export async function deleteReport(id: string): Promise<void> {
   await request(`/reports/${id}`, { method: "DELETE" });
+}
+
+// Users (admin)
+export interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
+export async function getUsers(): Promise<UserData[]> {
+  return request<UserData[]>("/users");
+}
+
+export async function createUser(data: {
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+}): Promise<UserData> {
+  return request<UserData>("/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateUser(
+  id: string,
+  data: { name?: string; role?: string; password?: string }
+): Promise<UserData> {
+  return request<UserData>(`/users/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await request(`/users/${id}`, { method: "DELETE" });
 }

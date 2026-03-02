@@ -1,9 +1,11 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { useUpload } from "@/hooks/useUpload";
 import Dropzone from "@/components/upload/Dropzone";
 import { UploadSuccess, UploadError } from "@/components/upload/UploadResult";
 import UploadHistory from "@/components/upload/UploadHistory";
 
 export default function UploadPage() {
+  const { isAdmin } = useAuth();
   const { status, result, error, upload, reset } = useUpload();
 
   return (
@@ -11,22 +13,23 @@ export default function UploadPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-text-primary">
-          Carica Report Vendite
+          {isAdmin ? "Carica Report Vendite" : "Report Vendite"}
         </h1>
         <p className="mt-1 text-sm text-text-muted">
-          Carica il file CSV esportato dal gestionale della farmacia. Il sistema
-          estrarrà automaticamente periodo, settori e metriche.
+          {isAdmin
+            ? "Carica il file CSV esportato dal gestionale della farmacia. Il sistema estrarrà automaticamente periodo, settori e metriche."
+            : "Visualizza i report vendite caricati."}
         </p>
       </div>
 
-      {/* Dropzone */}
-      {(status === "idle" || status === "uploading") && (
+      {/* Dropzone — admin only */}
+      {isAdmin && (status === "idle" || status === "uploading") && (
         <Dropzone onUpload={upload} uploading={status === "uploading"} />
       )}
 
-      {/* Result */}
-      {status === "success" && result && <UploadSuccess result={result} />}
-      {status === "error" && error && (
+      {/* Result — admin only */}
+      {isAdmin && status === "success" && result && <UploadSuccess result={result} />}
+      {isAdmin && status === "error" && error && (
         <UploadError error={error} onRetry={reset} />
       )}
 
@@ -38,7 +41,7 @@ export default function UploadPage() {
         <h2 className="mb-4 text-base font-semibold text-text-primary">
           Report Caricati
         </h2>
-        <UploadHistory />
+        <UploadHistory showDelete={isAdmin} />
       </div>
     </div>
   );

@@ -13,7 +13,11 @@ function formatDate(iso: string): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-export default function UploadHistory() {
+interface UploadHistoryProps {
+  showDelete?: boolean;
+}
+
+export default function UploadHistory({ showDelete = true }: UploadHistoryProps) {
   const { reports, loading, error, refetch } = useReports();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -100,32 +104,36 @@ export default function UploadHistory() {
               </div>
             </div>
 
-            {isConfirming ? (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-text-muted">
-                  Eliminare {monthName} {r.periodYear}?
-                </span>
-                <button
-                  onClick={() => handleDelete(r.id)}
-                  disabled={deleting}
-                  className="rounded-btn bg-accent-red px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-accent-red/90 disabled:opacity-50"
-                >
-                  {deleting ? "..." : "Elimina"}
-                </button>
-                <button
-                  onClick={() => setConfirmId(null)}
-                  className="rounded-btn border border-border-card px-3 py-1 text-xs text-text-muted transition-colors hover:text-text-primary"
-                >
-                  Annulla
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmId(r.id)}
-                className="flex-shrink-0 rounded-btn p-2 text-text-dim transition-colors hover:bg-accent-red/10 hover:text-accent-red"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+            {showDelete && (
+              <>
+                {isConfirming ? (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-text-muted">
+                      Eliminare {monthName} {r.periodYear}?
+                    </span>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      disabled={deleting}
+                      className="rounded-btn bg-accent-red px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-accent-red/90 disabled:opacity-50"
+                    >
+                      {deleting ? "..." : "Elimina"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(null)}
+                      className="rounded-btn border border-border-card px-3 py-1 text-xs text-text-muted transition-colors hover:text-text-primary"
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmId(r.id)}
+                    className="flex-shrink-0 rounded-btn p-2 text-text-dim transition-colors hover:bg-accent-red/10 hover:text-accent-red"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </>
             )}
           </div>
         );
