@@ -6,8 +6,16 @@ import type {
   UploadResult,
 } from "@/types";
 
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
+// In production, API_URL is injected at runtime into window.__API_URL__
+// In dev, Vite proxy handles /api → localhost:4000
+declare global {
+  interface Window {
+    __API_URL__?: string;
+  }
+}
+
+const BASE_URL = window.__API_URL__
+  ? `${window.__API_URL__}/api`
   : "/api";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
