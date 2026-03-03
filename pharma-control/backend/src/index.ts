@@ -7,6 +7,9 @@ import authRouter from "./routes/auth";
 import usersRouter from "./routes/users";
 import reportsRouter from "./routes/reports";
 import uploadRouter from "./routes/upload";
+import expenseCategoriesRouter from "./routes/expense-categories";
+import expensesRouter from "./routes/expenses";
+import suppliersRouter from "./routes/suppliers";
 import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
@@ -28,6 +31,9 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/expense-categories", expenseCategoriesRouter);
+app.use("/api/expenses", expensesRouter);
+app.use("/api/suppliers", suppliersRouter);
 
 // Global error handler
 app.use(errorHandler);
