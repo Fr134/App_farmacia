@@ -7,6 +7,7 @@ import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import UploadPage from "@/pages/UploadPage";
 import UsersPage from "@/pages/UsersPage";
+import ExpensesPage from "@/pages/ExpensesPage";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route
               path="/users"

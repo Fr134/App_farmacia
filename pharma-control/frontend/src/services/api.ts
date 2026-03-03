@@ -4,6 +4,10 @@ import type {
   ReportSummary,
   ReportWithSectors,
   UploadResult,
+  ExpenseCategory,
+  Expense,
+  ExpenseSummary,
+  Supplier,
 } from "@/types";
 
 // Runtime API URL injection (see inject-config.sh)
@@ -191,4 +195,87 @@ export async function updateUser(
 
 export async function deleteUser(id: string): Promise<void> {
   await request(`/users/${id}`, { method: "DELETE" });
+}
+
+// Pharmacy ID — single-pharmacy setup
+const PHARMACY_ID = "default";
+
+// Expense Categories
+export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
+  const data = await request<{ categories: ExpenseCategory[] }>("/expense-categories");
+  return data.categories;
+}
+
+// Expenses
+export async function getExpenses(filters?: {
+  categoryId?: string;
+  recurrenceType?: string;
+}): Promise<{ expenses: Expense[]; totalMonthlyNet: number; totalMonthlyGross: number }> {
+  const params = new URLSearchParams({ pharmacyId: PHARMACY_ID });
+  if (filters?.categoryId) params.set("categoryId", filters.categoryId);
+  if (filters?.recurrenceType) params.set("recurrenceType", filters.recurrenceType);
+  return request(`/expenses?${params.toString()}`);
+}
+
+export async function getExpenseSummary(): Promise<ExpenseSummary> {
+  return request(`/expenses/summary?pharmacyId=${PHARMACY_ID}`);
+}
+
+export async function createExpense(data: {
+  name: string;
+  description?: string;
+  categoryId: string;
+  supplierId?: string;
+  amountNet: number;
+  vatRate: number;
+  isVatDeductible: boolean;
+  recurrenceType: string;
+  isFixedCost: boolean;
+  validFrom: string;
+  validTo?: string;
+  notes?: string;
+}): Promise<{ expense: Expense }> {
+  return request("/expenses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+  });
+}
+
+export async function updateExpense(
+  id: string,
+  data: Record<string, unknown>
+): Promise<{ expense: Expense }> {
+  return request(`/expenses/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  await request(`/expenses/${id}`, { method: "DELETE" });
+}
+
+// Suppliers
+export async function getSuppliers(): Promise<Supplier[]> {
+  const data = await request<{ suppliers: Supplier[] }>(
+    `/suppliers?pharmacyId=${PHARMACY_ID}`
+  );
+  return data.suppliers;
+}
+
+export async function createSupplier(data: {
+  ragioneSociale: string;
+  piva?: string;
+  codiceFiscale?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+}): Promise<{ supplier: Supplier }> {
+  return request("/suppliers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+  });
 }

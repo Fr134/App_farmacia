@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Users, LogOut, X } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
+    { to: "/expenses", label: "Spese", icon: Receipt, show: true },
     { to: "/upload", label: "Carica Report", icon: Upload, show: true },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
   ];
