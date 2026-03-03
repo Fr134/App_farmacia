@@ -145,3 +145,82 @@ export interface AlertResponse {
   alerts: Alert[];
   summary: AlertSummary;
 }
+
+// ─── Expense Module Types ─────────────────────────────
+
+export type RecurrenceType = "NONE" | "MONTHLY" | "QUARTERLY" | "ANNUAL";
+export type ExpenseSource = "MANUAL" | "INVOICE" | "IMPORT";
+export type InstanceStatus = "ACTIVE" | "SUSPENDED" | "CLOSED";
+export type InvoiceStatus = "IMPORTED" | "MATCHED" | "RECONCILED" | "REJECTED";
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  color?: string;
+  icon?: string;
+  isSystem: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  pharmacyId: string;
+  ragioneSociale: string;
+  piva?: string;
+  codiceFiscale?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+}
+
+export interface Expense {
+  id: string;
+  pharmacyId: string;
+  name: string;
+  description?: string;
+  category: ExpenseCategory;
+  categoryId: string;
+  supplier?: Supplier;
+  supplierId?: string;
+  amountNet: number;
+  vatRate: number;
+  amountGross: number;
+  isVatDeductible: boolean;
+  recurrenceType: RecurrenceType;
+  isFixedCost: boolean;
+  validFrom: string;
+  validTo?: string;
+  source: ExpenseSource;
+  passiveInvoiceId?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface ExpenseFormData {
+  name: string;
+  description?: string;
+  categoryId: string;
+  supplierId?: string;
+  amountNet: number;
+  vatRate: number;
+  isVatDeductible: boolean;
+  recurrenceType: RecurrenceType;
+  isFixedCost: boolean;
+  validFrom: string;
+  validTo?: string;
+  notes?: string;
+}
+
+export interface ExpenseSummary {
+  totalMonthlyNet: number;
+  totalMonthlyGross: number;
+  fixedCostsMonthly: number;
+  variableCostsMonthly: number;
+  byCategory: {
+    categoryName: string;
+    color: string;
+    icon: string;
+    total: number;
+  }[];
+}

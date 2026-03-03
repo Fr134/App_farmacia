@@ -78,3 +78,146 @@ model SectorData {
 
   @@index([report_id])
 }
+
+// ─── Enums ────────────────────────────────────────────
+
+enum RecurrenceType {
+  NONE
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum ExpenseSource {
+  MANUAL
+  INVOICE
+  IMPORT
+}
+
+enum InstanceStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum InvoiceStatus {
+  IMPORTED
+  MATCHED
+  RECONCILED
+  REJECTED
+}
+
+// ─── Expense Module ───────────────────────────────────
+
+model ExpenseCategory {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  color      String?
+  icon       String?
+  is_system  Boolean   @default(false)
+  created_at DateTime  @default(now())
+
+  expenses   Expense[]
+}
+
+model Supplier {
+  id               String    @id @default(cuid())
+  pharmacy_id      String
+  ragione_sociale  String
+  piva             String?
+  codice_fiscale   String?
+  sdi_code         String?
+  iban             String?
+  email            String?
+  phone            String?
+  notes            String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  expenses         Expense[]
+
+  @@index([pharmacy_id])
+}
+
+model Expense {
+  id                String          @id @default(cuid())
+  pharmacy_id       String
+
+  name              String
+  description       String?
+
+  category_id       String
+  category          ExpenseCategory @relation(fields: [category_id], references: [id])
+
+  supplier_id       String?
+  supplier          Supplier?       @relation(fields: [supplier_id], references: [id])
+
+  amount_net        Decimal         @db.Decimal(10, 2)
+  vat_rate          Decimal         @db.Decimal(5, 2)   @default(22)
+  amount_gross      Decimal         @db.Decimal(10, 2)
+  is_vat_deductible Boolean         @default(true)
+
+  recurrence_type   RecurrenceType  @default(MONTHLY)
+  is_fixed_cost     Boolean         @default(false)
+
+  valid_from        DateTime
+  valid_to          DateTime?
+
+  source            ExpenseSource   @default(MANUAL)
+
+  passive_invoice_id String?
+
+  notes             String?
+
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+  deleted_at        DateTime?
+
+  recurring_instances ExpenseRecurringInstance[]
+
+  @@index([pharmacy_id])
+  @@index([category_id])
+  @@index([deleted_at])
+}
+
+model ExpenseRecurringInstance {
+  id                   String         @id @default(cuid())
+  expense_id           String
+  expense              Expense        @relation(fields: [expense_id], references: [id], onDelete: Cascade)
+
+  period_month         DateTime
+  amount_net_override  Decimal?       @db.Decimal(10, 2)
+
+  status               InstanceStatus @default(ACTIVE)
+  created_at           DateTime       @default(now())
+
+  @@unique([expense_id, period_month])
+  @@index([expense_id])
+}
+
+model PassiveInvoice {
+  id              String        @id @default(cuid())
+  pharmacy_id     String
+
+  supplier_id     String?
+
+  sdi_id          String?
+  invoice_number  String?
+  invoice_date    DateTime?
+
+  taxable_amount  Decimal?      @db.Decimal(10, 2)
+  vat_amount      Decimal?      @db.Decimal(10, 2)
+  total_amount    Decimal?      @db.Decimal(10, 2)
+
+  xml_raw         String?       @db.Text
+
+  status          InvoiceStatus @default(IMPORTED)
+
+  expense_id      String?
+
+  imported_at     DateTime      @default(now())
+  created_at      DateTime      @default(now())
+
+  @@index([pharmacy_id])
+  @@index([status])
+}
