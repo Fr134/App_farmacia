@@ -6,7 +6,13 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { login as apiLogin, logout as apiLogout, getMe } from "@/services/api";
+import {
+  login as apiLogin,
+  logout as apiLogout,
+  getMe,
+  getToken,
+  setToken,
+} from "@/services/api";
 
 export interface AuthUser {
   id: string;
@@ -30,11 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if already authenticated on mount
+  // Check if already authenticated on mount (token in localStorage)
   useEffect(() => {
+    if (!getToken()) {
+      setLoading(false);
+      return;
+    }
+
     getMe()
       .then((u) => setUser(u))
-      .catch(() => setUser(null))
+      .catch(() => {
+        setToken(null);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 

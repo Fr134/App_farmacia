@@ -6,8 +6,7 @@ import type {
   UploadResult,
 } from "@/types";
 
-// In production, API_URL is injected at runtime into window.__API_URL__
-// In dev, Vite proxy handles /api → localhost:4000
+// Runtime API URL injection (see inject-config.sh)
 declare global {
   interface Window {
     __API_URL__?: string;
@@ -18,20 +17,46 @@ const BASE_URL = window.__API_URL__
   ? `${window.__API_URL__}/api`
   : "/api";
 
+// Token stored in memory — set by AuthContext after login
+let authToken: string | null = localStorage.getItem("token");
+
+export function setToken(token: string | null) {
+  authToken = token;
+  if (token) {
+    localStorage.setItem("token", token);
+  } else {
+    localStorage.removeItem("token");
+  }
+}
+
+export function getToken(): string | null {
+  return authToken;
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string> || {}),
+  };
+
+  // Attach token as Authorization header
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${url}`, {
       ...init,
+      headers,
       credentials: "include",
     });
   } catch {
     throw new Error("Impossibile connettersi al server");
   }
 
-  // On 401, redirect to login
+  // On 401, clear token and redirect to login
   if (res.status === 401) {
-    // Only redirect if we're not already on the login page
+    setToken(null);
     if (!window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
@@ -59,15 +84,22 @@ export interface LoginResponse {
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  return request<LoginResponse>("/auth/login", {
+  const data = await request<LoginResponse>("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  // Store token for subsequent requests
+  setToken(data.token);
+  return data;
 }
 
 export async function logout(): Promise<void> {
-  await request("/auth/logout", { method: "POST" });
+  try {
+    await request("/auth/logout", { method: "POST" });
+  } finally {
+    setToken(null);
+  }
 }
 
 export async function getMe(): Promise<{ id: string; email: string; name: string; role: string }> {
@@ -100,6 +132,7 @@ export async function uploadCsv(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("file", file);
 
+  // Don't set Content-Type — browser sets it with boundary for FormData
   return request<UploadResult>("/upload", {
     method: "POST",
     body: formData,
