@@ -7,13 +7,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Receipt, Landmark } from "lucide-react";
+import { Receipt, Landmark, ArrowDownLeft, Scale } from "lucide-react";
 import { COLORS } from "@/lib/constants";
-import { formatCurrency, formatPercent, truncName } from "@/lib/formatters";
-import type { SectorData } from "@/types";
+import { formatCurrency, truncName } from "@/lib/formatters";
+import type { SectorData, QuarterlyVatData } from "@/types";
 
 interface Props {
   sectors: SectorData[];
+  quarterlyVat?: QuarterlyVatData | null;
+  expenseVatMonthly?: number | null;
 }
 
 interface IvaBarEntry {
@@ -45,8 +47,12 @@ function IvaTooltip({
   );
 }
 
-export default function VATAnalysis({ sectors }: Props) {
-  // Compute totals
+function getQuarterNumber(month: number): number {
+  return Math.ceil(month / 3);
+}
+
+export default function VATAnalysis({ sectors, quarterlyVat, expenseVatMonthly }: Props) {
+  // Compute totals from sectors
   let totalImponibile = 0;
   let totalIva = 0;
 
@@ -55,7 +61,21 @@ export default function VATAnalysis({ sectors }: Props) {
     totalIva += s.iva ?? 0;
   }
 
-  const effectiveVatRate = totalImponibile > 0 ? (totalIva / totalImponibile) * 100 : 0;
+  // Quarterly IVA logic
+  let ivaDebito = quarterlyVat?.ivaDebito ?? totalIva;
+  const monthsInQ = quarterlyVat?.monthsInQuarter ?? 1;
+  let ivaCredito = (expenseVatMonthly ?? 0) * monthsInQ;
+  let ivaVersare = ivaDebito - ivaCredito;
+
+  // Regola IVA negativa
+  if (ivaVersare < 0) {
+    ivaCredito = Math.abs(ivaVersare);
+    ivaDebito = 0;
+    ivaVersare = 0;
+  }
+
+  const quarterNum = quarterlyVat ? getQuarterNumber(quarterlyVat.quarterStart) : null;
+  const hasQuarterlyData = quarterlyVat != null;
 
   // Top 8 sectors by IVA amount
   const ivaData: IvaBarEntry[] = [...sectors]
@@ -72,8 +92,8 @@ export default function VATAnalysis({ sectors }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* 2 KPI cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* 4 KPI cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Imponibile Totale */}
         <div className="relative overflow-hidden rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
           <div
@@ -96,24 +116,70 @@ export default function VATAnalysis({ sectors }: Props) {
           </div>
         </div>
 
-        {/* IVA Totale */}
+        {/* IVA a Debito */}
         <div className="relative overflow-hidden rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
           <div
             className="absolute top-0 left-0 right-0 h-[3px]"
-            style={{ backgroundColor: COLORS.accentRed }}
+            style={{ backgroundColor: COLORS.accentAmber }}
           />
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Landmark className="h-4 w-4" style={{ color: COLORS.accentRed }} />
+              <Landmark className="h-4 w-4" style={{ color: COLORS.accentAmber }} />
               <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
-                IVA Totale
+                IVA a Debito
               </span>
             </div>
             <p className="font-mono text-xl font-bold text-text-primary">
-              {formatCurrency(totalIva)}
+              {formatCurrency(ivaDebito)}
             </p>
             <p className="mt-1 text-[11px] text-text-dim">
-              Aliquota media effettiva: {formatPercent(effectiveVatRate)}
+              {hasQuarterlyData
+                ? `Trimestre Q${quarterNum} \u00B7 ${monthsInQ} ${monthsInQ === 1 ? "mese" : "mesi"}`
+                : "IVA vendite periodo corrente"}
+            </p>
+          </div>
+        </div>
+
+        {/* IVA a Credito */}
+        <div className="relative overflow-hidden rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px]"
+            style={{ backgroundColor: COLORS.accentGreen }}
+          />
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowDownLeft className="h-4 w-4" style={{ color: COLORS.accentGreen }} />
+              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
+                IVA a Credito
+              </span>
+            </div>
+            <p className="font-mono text-xl font-bold text-text-primary">
+              {formatCurrency(ivaCredito)}
+            </p>
+            <p className="mt-1 text-[11px] text-text-dim">
+              IVA detraibile spese operative
+            </p>
+          </div>
+        </div>
+
+        {/* IVA da Versare */}
+        <div className="relative overflow-hidden rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px]"
+            style={{ backgroundColor: ivaVersare > 0 ? COLORS.accentRed : COLORS.accentGreen }}
+          />
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Scale className="h-4 w-4" style={{ color: ivaVersare > 0 ? COLORS.accentRed : COLORS.accentGreen }} />
+              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
+                IVA da Versare
+              </span>
+            </div>
+            <p className="font-mono text-xl font-bold text-text-primary">
+              {formatCurrency(ivaVersare)}
+            </p>
+            <p className="mt-1 text-[11px] text-text-dim">
+              {ivaVersare > 0 ? "Netto dovuto all\u2019erario" : "Nessun versamento dovuto"}
             </p>
           </div>
         </div>

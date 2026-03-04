@@ -217,6 +217,7 @@ export interface ExpenseSummary {
   totalMonthlyGross: number;
   fixedCostsMonthly: number;
   variableCostsMonthly: number;
+  deductibleVatMonthly: number;
   byCategory: {
     categoryName: string;
     color: string;

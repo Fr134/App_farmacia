@@ -146,6 +146,7 @@ export async function getExpenseSummary(pharmacyId: string): Promise<ExpenseSumm
   let totalMonthlyGross = 0;
   let fixedCostsMonthly = 0;
   let variableCostsMonthly = 0;
+  let deductibleVatMonthly = 0;
 
   const categoryMap = new Map<string, { categoryName: string; color: string; icon: string; total: number }>();
 
@@ -161,6 +162,10 @@ export async function getExpenseSummary(pharmacyId: string): Promise<ExpenseSumm
       fixedCostsMonthly += monthly;
     } else if (row.recurrence_type !== "NONE") {
       variableCostsMonthly += monthly;
+    }
+
+    if (row.is_vat_deductible) {
+      deductibleVatMonthly += monthly * (vatRate / 100);
     }
 
     const catName = row.category.name;
@@ -186,6 +191,7 @@ export async function getExpenseSummary(pharmacyId: string): Promise<ExpenseSumm
     totalMonthlyGross: Math.round(totalMonthlyGross * 100) / 100,
     fixedCostsMonthly: Math.round(fixedCostsMonthly * 100) / 100,
     variableCostsMonthly: Math.round(variableCostsMonthly * 100) / 100,
+    deductibleVatMonthly: Math.round(deductibleVatMonthly * 100) / 100,
     byCategory,
   };
 }

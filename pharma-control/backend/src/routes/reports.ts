@@ -79,6 +79,45 @@ router.get(
   })
 );
 
+// GET /api/reports/quarterly-vat — IVA cumulativa trimestrale
+router.get(
+  "/quarterly-vat",
+  asyncHandler(async (req, res) => {
+    const monthStr = req.query.month as string | undefined;
+    const yearStr = req.query.year as string | undefined;
+
+    if (!monthStr || !yearStr) {
+      res.status(400).json({
+        success: false,
+        error: "Parametri 'month' e 'year' obbligatori",
+      });
+      return;
+    }
+
+    const month = parseInt(monthStr, 10);
+    const year = parseInt(yearStr, 10);
+
+    if (isNaN(month) || month < 1 || month > 12) {
+      res.status(400).json({
+        success: false,
+        error: "Il mese deve essere un numero tra 1 e 12",
+      });
+      return;
+    }
+
+    if (isNaN(year)) {
+      res.status(400).json({
+        success: false,
+        error: "L'anno deve essere un numero valido",
+      });
+      return;
+    }
+
+    const data = await reportService.getQuarterlyVat(month, year);
+    res.json({ success: true, data });
+  })
+);
+
 // GET /api/reports/latest — get the most recent report
 router.get(
   "/latest",

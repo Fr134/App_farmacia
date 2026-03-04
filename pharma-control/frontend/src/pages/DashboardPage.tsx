@@ -13,7 +13,7 @@ import {
   ChevronDown,
   Download,
 } from "lucide-react";
-import { getReport, getLatestReport, getAggregateReport } from "@/services/api";
+import { getReport, getLatestReport, getAggregateReport, getExpenseSummary, getQuarterlyVat } from "@/services/api";
 import { exportDashboardPdf } from "@/lib/exportPdf";
 import { useAlerts } from "@/hooks/useAlerts";
 import { MESI_DISPLAY, MESI_SHORT, COLORS } from "@/lib/constants";
@@ -40,7 +40,7 @@ import ComparisonSummary from "@/components/dashboard/ComparisonSummary";
 import DetailTable from "@/components/dashboard/DetailTable";
 import KPICardSkeleton from "@/components/ui/KPICardSkeleton";
 import ChartSkeleton from "@/components/ui/ChartSkeleton";
-import type { ReportWithSectors } from "@/types";
+import type { ReportWithSectors, QuarterlyVatData } from "@/types";
 
 export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +67,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
   const [highlightedSector, setHighlightedSector] = useState<string | null>(null);
+  const [expenseVatMonthly, setExpenseVatMonthly] = useState<number | null>(null);
+  const [quarterlyVat, setQuarterlyVat] = useState<QuarterlyVatData | null>(null);
   const [distView, setDistView] = useState<"donut" | "treemap">("donut");
   const [detailOpen, setDetailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -113,6 +115,8 @@ export default function DashboardPage() {
     setError(null);
     setEmpty(false);
     setCompReport(null);
+    setExpenseVatMonthly(null);
+    setQuarterlyVat(null);
 
     try {
       if (filterState.mode === "single") {
@@ -120,16 +124,41 @@ export default function DashboardPage() {
           ? await getReport(filterState.currentId)
           : await getLatestReport();
         setReport(data);
+
+        // Fetch IVA trimestrale data in parallel
+        const [expSummary, qVat] = await Promise.all([
+          getExpenseSummary().catch(() => null),
+          getQuarterlyVat(data.periodMonth, data.periodYear).catch(() => null),
+        ]);
+        setExpenseVatMonthly(expSummary?.deductibleVatMonthly ?? null);
+        setQuarterlyVat(qVat);
       } else if (filterState.mode === "compare") {
         const currentData = filterState.currentId
           ? await getReport(filterState.currentId)
           : await getLatestReport();
         setReport(currentData);
 
+        const fetchPromises: Promise<unknown>[] = [];
+
         if (filterState.comparisonId) {
-          const prevData = await getReport(filterState.comparisonId);
-          setCompReport(prevData);
+          fetchPromises.push(
+            getReport(filterState.comparisonId).then((d) => setCompReport(d))
+          );
         }
+
+        // Fetch IVA trimestrale data
+        fetchPromises.push(
+          getExpenseSummary()
+            .then((s) => setExpenseVatMonthly(s.deductibleVatMonthly))
+            .catch(() => null)
+        );
+        fetchPromises.push(
+          getQuarterlyVat(currentData.periodMonth, currentData.periodYear)
+            .then((d) => setQuarterlyVat(d))
+            .catch(() => null)
+        );
+
+        await Promise.all(fetchPromises);
       } else if (filterState.mode === "range") {
         if (filterState.rangeFrom && filterState.rangeTo) {
           const data = await getAggregateReport(filterState.rangeFrom, filterState.rangeTo);
@@ -451,7 +480,11 @@ export default function DashboardPage() {
 
       {/* VAT Analysis */}
       <SectionCard title="Analisi IVA" subtitle="Dettaglio imponibile e imposta sul valore aggiunto">
-        <VATAnalysis sectors={r.sectors} />
+        <VATAnalysis
+          sectors={r.sectors}
+          quarterlyVat={quarterlyVat}
+          expenseVatMonthly={expenseVatMonthly}
+        />
       </SectionCard>
 
       {/* Detail Table — collapsible */}

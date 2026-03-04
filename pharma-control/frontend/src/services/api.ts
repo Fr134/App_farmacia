@@ -7,6 +7,7 @@ import type {
   ExpenseCategory,
   Expense,
   ExpenseSummary,
+  QuarterlyVatData,
   Supplier,
 } from "@/types";
 
@@ -149,6 +150,12 @@ export async function getAlerts(
 ): Promise<AlertResponse> {
   const params = compareTo ? `?compare_to=${encodeURIComponent(compareTo)}` : "";
   return request<AlertResponse>(`/reports/${reportId}/alerts${params}`);
+}
+
+export async function getQuarterlyVat(month: number, year: number): Promise<QuarterlyVatData> {
+  return request<QuarterlyVatData>(
+    `/reports/quarterly-vat?month=${month}&year=${year}`
+  );
 }
 
 export async function deleteReport(id: string): Promise<void> {

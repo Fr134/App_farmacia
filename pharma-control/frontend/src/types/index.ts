@@ -180,10 +180,18 @@ export interface ExpenseSummary {
   totalMonthlyGross: number;
   fixedCostsMonthly: number;
   variableCostsMonthly: number;
+  deductibleVatMonthly: number;
   byCategory: {
     categoryName: string;
     color: string;
     icon: string;
     total: number;
   }[];
+}
+
+export interface QuarterlyVatData {
+  ivaDebito: number;
+  monthsInQuarter: number;
+  quarterStart: number;
+  quarterEnd: number;
 }

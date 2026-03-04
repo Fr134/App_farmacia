@@ -389,6 +389,34 @@ function buildDateRangeFilter(
   return conditions;
 }
 
+export async function getQuarterlyVat(
+  month: number,
+  year: number
+): Promise<{ ivaDebito: number; monthsInQuarter: number; quarterStart: number; quarterEnd: number }> {
+  const quarterStartMonth = Math.floor((month - 1) / 3) * 3 + 1;
+  const quarterEnd = quarterStartMonth + 2;
+
+  const reports = await prisma.report.findMany({
+    where: {
+      period_year: year,
+      period_month: { gte: quarterStartMonth, lte: month },
+    },
+    select: { total_iva: true },
+  });
+
+  let ivaDebito = 0;
+  for (const r of reports) {
+    ivaDebito += r.total_iva.toNumber();
+  }
+
+  return {
+    ivaDebito: Math.round(ivaDebito * 100) / 100,
+    monthsInQuarter: reports.length,
+    quarterStart: quarterStartMonth,
+    quarterEnd,
+  };
+}
+
 export async function deleteById(id: string): Promise<boolean> {
   try {
     await prisma.report.delete({ where: { id } });
