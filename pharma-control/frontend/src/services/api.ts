@@ -9,6 +9,13 @@ import type {
   ExpenseSummary,
   QuarterlyVatData,
   Supplier,
+  Budget,
+  BudgetSummary,
+  BudgetWithSummary,
+  BudgetRevenueLine,
+  BudgetExpenseLine,
+  AdjustmentMode,
+  RecurrenceType,
 } from "@/types";
 
 // Runtime API URL injection (see inject-config.sh)
@@ -284,5 +291,106 @@ export async function createSupplier(data: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+  });
+}
+
+// Budgets
+export async function getBudgets(): Promise<{ budgets: BudgetWithSummary[] }> {
+  return request(`/budgets?pharmacyId=${PHARMACY_ID}`);
+}
+
+export async function getBudget(id: string): Promise<{ budget: Budget; summary: BudgetSummary }> {
+  return request(`/budgets/${id}`);
+}
+
+export async function getBudgetSummary(id: string): Promise<{ summary: BudgetSummary }> {
+  return request(`/budgets/${id}/summary`);
+}
+
+export async function createBudget(data: {
+  name: string;
+  year: number;
+  baselineSource: string;
+  baselineYear?: number;
+  globalAdjustmentPct?: number;
+  notes?: string;
+}): Promise<{ budget: Budget; summary: BudgetSummary }> {
+  return request("/budgets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+  });
+}
+
+export async function updateBudget(
+  id: string,
+  data: Record<string, unknown>
+): Promise<{ budget: Budget; summary: BudgetSummary }> {
+  return request(`/budgets/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteBudget(id: string): Promise<void> {
+  await request(`/budgets/${id}`, { method: "DELETE" });
+}
+
+export async function updateRevenueLines(
+  budgetId: string,
+  data: {
+    globalAdjustmentPct?: number | null;
+    lines?: Array<{
+      id: string;
+      adjustmentMode: AdjustmentMode;
+      adjustmentPct?: number;
+      adjustmentAbsolute?: number;
+    }>;
+  }
+): Promise<{ revenueLines: BudgetRevenueLine[]; summary: BudgetSummary }> {
+  return request(`/budgets/${budgetId}/revenue-lines`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function createBudgetExpenseLine(
+  budgetId: string,
+  data: {
+    name: string;
+    categoryLabel: string;
+    amountNet: number;
+    vatRate: number;
+    recurrenceType: RecurrenceType;
+    notes?: string;
+  }
+): Promise<{ expenseLine: BudgetExpenseLine; summary: BudgetSummary }> {
+  return request(`/budgets/${budgetId}/expense-lines`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateBudgetExpenseLine(
+  budgetId: string,
+  lineId: string,
+  data: Record<string, unknown>
+): Promise<{ expenseLine: BudgetExpenseLine; summary: BudgetSummary }> {
+  return request(`/budgets/${budgetId}/expense-lines/${lineId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteBudgetExpenseLine(
+  budgetId: string,
+  lineId: string
+): Promise<{ summary: BudgetSummary }> {
+  return request(`/budgets/${budgetId}/expense-lines/${lineId}`, {
+    method: "DELETE",
   });
 }

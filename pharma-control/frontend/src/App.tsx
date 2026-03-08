@@ -8,6 +8,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import UploadPage from "@/pages/UploadPage";
 import UsersPage from "@/pages/UsersPage";
 import ExpensesPage from "@/pages/ExpensesPage";
+import BudgetListPage from "@/pages/BudgetListPage";
+import BudgetDetailPage from "@/pages/BudgetDetailPage";
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
           >
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/budget" element={<BudgetListPage />} />
+            <Route path="/budget/:id" element={<BudgetDetailPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route
               path="/users"

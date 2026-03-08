@@ -10,6 +10,7 @@ import uploadRouter from "./routes/upload";
 import expenseCategoriesRouter from "./routes/expense-categories";
 import expensesRouter from "./routes/expenses";
 import suppliersRouter from "./routes/suppliers";
+import budgetsRouter from "./routes/budgets";
 import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/expense-categories", expenseCategoriesRouter);
 app.use("/api/expenses", expensesRouter);
 app.use("/api/suppliers", suppliersRouter);
+app.use("/api/budgets", budgetsRouter);
 
 // Global error handler
 app.use(errorHandler);

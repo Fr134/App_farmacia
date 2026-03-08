@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Upload, Receipt, Users } from "lucide-react";
+import { LayoutDashboard, Upload, Receipt, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function BottomNav() {
@@ -9,6 +9,7 @@ export default function BottomNav() {
   const items = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
     { to: "/expenses", label: "Spese", icon: Receipt, show: true },
+    { to: "/budget", label: "Budget", icon: BarChart3, show: true },
     { to: "/upload", label: "Carica", icon: Upload, show: true },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
   ];

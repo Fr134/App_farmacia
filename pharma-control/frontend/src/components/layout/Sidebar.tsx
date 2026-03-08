@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
     { to: "/expenses", label: "Spese", icon: Receipt, show: true },
+    { to: "/budget", label: "Budget", icon: BarChart3, show: true },
     { to: "/upload", label: "Carica Report", icon: Upload, show: true },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
   ];
@@ -65,7 +66,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           {navItems
             .filter((item) => item.show)
             .map(({ to, label, icon: Icon }) => {
-              const isActive = pathname === to;
+              const isActive = pathname === to || (to !== "/" && pathname.startsWith(to + "/"));
               return (
                 <Link
                   key={to}

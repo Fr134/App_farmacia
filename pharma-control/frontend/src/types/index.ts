@@ -195,3 +195,72 @@ export interface QuarterlyVatData {
   quarterStart: number;
   quarterEnd: number;
 }
+
+// ─── Budget Module Types ─────────────────────────────
+
+export type BudgetStatus = "DRAFT" | "CONFIRMED" | "ARCHIVED";
+export type BaselineSource = "HISTORICAL" | "MANUAL";
+export type AdjustmentMode = "PCT_CHANGE" | "ABSOLUTE" | "NO_CHANGE";
+
+export interface BudgetRevenueLine {
+  id: string;
+  budgetId: string;
+  categoryLabel: string;
+  baselineRevenue: number;
+  baselineMarginPct: number;
+  baselinePieces?: number;
+  adjustmentMode: AdjustmentMode;
+  adjustmentPct?: number;
+  adjustmentAbsolute?: number;
+  forecastRevenue: number;
+  forecastCOGS: number;
+  forecastMargin: number;
+  sortOrder: number;
+}
+
+export interface BudgetExpenseLine {
+  id: string;
+  budgetId: string;
+  expenseId?: string;
+  name: string;
+  categoryLabel: string;
+  amountNet: number;
+  vatRate: number;
+  amountGross: number;
+  recurrenceType: RecurrenceType;
+  annualAmountNet: number;
+  isStructural: boolean;
+  notes?: string;
+  sortOrder: number;
+}
+
+export interface Budget {
+  id: string;
+  pharmacyId: string;
+  name: string;
+  year: number;
+  status: BudgetStatus;
+  baselineSource: BaselineSource;
+  baselineYear?: number;
+  globalAdjustmentPct?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  revenueLines: BudgetRevenueLine[];
+  expenseLines: BudgetExpenseLine[];
+}
+
+export interface BudgetSummary {
+  totalForecastRevenue: number;
+  totalForecastCOGS: number;
+  totalForecastMargin: number;
+  forecastMarginPct: number;
+  totalAnnualExpenses: number;
+  totalAnnualExpensesGross: number;
+  estimatedEBITDA: number;
+  ebitdaMarginPct: number;
+}
+
+export interface BudgetWithSummary extends Budget {
+  summary: BudgetSummary;
+}
