@@ -6,6 +6,7 @@ import type { ReportSummary } from "@/types";
 interface CreateBudgetModalProps {
   open: boolean;
   saving: boolean;
+  serverError: string | null;
   onClose: () => void;
   onSubmit: (data: {
     name: string;
@@ -19,6 +20,7 @@ interface CreateBudgetModalProps {
 export default function CreateBudgetModal({
   open,
   saving,
+  serverError,
   onClose,
   onSubmit,
 }: CreateBudgetModalProps) {
@@ -221,6 +223,13 @@ export default function CreateBudgetModal({
               />
             </div>
           </form>
+
+          {/* Server error */}
+          {serverError && (
+            <div className="mx-6 mb-0 rounded-btn border border-accent-red/30 bg-accent-red/5 p-3 text-xs text-accent-red">
+              {serverError}
+            </div>
+          )}
 
           {/* Footer */}
           <div className="border-t border-border-card px-6 py-4 flex items-center justify-end gap-3">

@@ -13,6 +13,7 @@ export default function BudgetListPage() {
   const { budgets, loading, error, refetch } = useBudgets();
   const [modalOpen, setModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   async function handleCreate(data: {
     name: string;
@@ -22,12 +23,13 @@ export default function BudgetListPage() {
     notes?: string;
   }) {
     setCreating(true);
+    setCreateError(null);
     try {
       const result = await createBudget(data);
       setModalOpen(false);
       navigate(`/budget/${result.budget.id}`);
-    } catch {
-      // error handled by api client
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setCreating(false);
     }
@@ -122,7 +124,8 @@ export default function BudgetListPage() {
       <CreateBudgetModal
         open={modalOpen}
         saving={creating}
-        onClose={() => setModalOpen(false)}
+        serverError={createError}
+        onClose={() => { setModalOpen(false); setCreateError(null); }}
         onSubmit={handleCreate}
       />
     </div>

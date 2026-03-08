@@ -283,7 +283,7 @@ model BudgetRevenueLine {
 
   // Baseline values — read-only, sourced from historical CSV data
   baselineRevenue     Decimal         @db.Decimal(12, 2)
-  baselineMarginPct   Decimal         @db.Decimal(6, 4)   // e.g. 27.6900 — LOCKED
+  baselineMarginPct   Decimal         @db.Decimal(8, 4)   // e.g. 27.6900 — LOCKED
   baselinePieces      Int?
 
   // Adjustment applied by the user
