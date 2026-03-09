@@ -4,6 +4,12 @@ import { formatPercent } from "@/lib/formatters";
 import { COLORS } from "@/lib/constants";
 import { useCountUp } from "@/hooks/useCountUp";
 
+interface BudgetTarget {
+  label: string;            // e.g. "Budget 2026"
+  targetValue: string;      // e.g. "€195.715/mo"
+  achievementPct: number;   // e.g. 75.3
+}
+
 interface KPICardWithDeltaProps {
   label: string;
   value: string;
@@ -14,6 +20,7 @@ interface KPICardWithDeltaProps {
   accentColor: string;
   previousValue?: string | null;
   delta?: number | null;
+  budgetTarget?: BudgetTarget | null;
 }
 
 export default function KPICardWithDelta({
@@ -26,6 +33,7 @@ export default function KPICardWithDelta({
   accentColor,
   previousValue,
   delta,
+  budgetTarget,
 }: KPICardWithDeltaProps) {
   const hasDelta = delta != null && previousValue != null;
   const animated = useCountUp(rawValue ?? 0);
@@ -83,6 +91,44 @@ export default function KPICardWithDelta({
             {/* Previous value */}
             <p className="text-[11px] text-text-dim">
               vs {previousValue}
+            </p>
+          </div>
+        )}
+
+        {budgetTarget && (
+          <div className="mt-3 pt-3 border-t border-border-card/60">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-text-dim">
+                {budgetTarget.label}
+              </span>
+              <span
+                className="font-mono text-[11px] font-semibold"
+                style={{
+                  color: budgetTarget.achievementPct >= 100
+                    ? COLORS.accentGreen
+                    : budgetTarget.achievementPct >= 80
+                      ? COLORS.accentAmber
+                      : COLORS.accentRed,
+                }}
+              >
+                {formatPercent(budgetTarget.achievementPct)}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(budgetTarget.achievementPct, 100)}%`,
+                  backgroundColor: budgetTarget.achievementPct >= 100
+                    ? COLORS.accentGreen
+                    : budgetTarget.achievementPct >= 80
+                      ? COLORS.accentAmber
+                      : COLORS.accentRed,
+                }}
+              />
+            </div>
+            <p className="mt-1 text-[10px] text-text-dim font-mono">
+              Target: {budgetTarget.targetValue}
             </p>
           </div>
         )}

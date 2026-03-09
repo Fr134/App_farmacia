@@ -13,7 +13,7 @@ import {
   ChevronDown,
   Download,
 } from "lucide-react";
-import { getReport, getLatestReport, getAggregateReport, getExpenseSummary, getQuarterlyVat } from "@/services/api";
+import { getReport, getLatestReport, getAggregateReport, getExpenseSummary, getQuarterlyVat, getBudgets } from "@/services/api";
 import { exportDashboardPdf } from "@/lib/exportPdf";
 import { useAlerts } from "@/hooks/useAlerts";
 import { MESI_DISPLAY, MESI_SHORT, COLORS } from "@/lib/constants";
@@ -40,7 +40,7 @@ import ComparisonSummary from "@/components/dashboard/ComparisonSummary";
 import DetailTable from "@/components/dashboard/DetailTable";
 import KPICardSkeleton from "@/components/ui/KPICardSkeleton";
 import ChartSkeleton from "@/components/ui/ChartSkeleton";
-import type { ReportWithSectors, QuarterlyVatData } from "@/types";
+import type { ReportWithSectors, QuarterlyVatData, BudgetSummary } from "@/types";
 
 export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,6 +72,7 @@ export default function DashboardPage() {
   const [distView, setDistView] = useState<"donut" | "treemap">("donut");
   const [detailOpen, setDetailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [budgetSummary, setBudgetSummary] = useState<{ summary: BudgetSummary; year: number; name: string } | null>(null);
 
   // Alerts (hooks must be called before any early return)
   const isRangeMode = filterState.mode === "range";
@@ -185,6 +186,31 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
+  // Fetch budget for the viewed year
+  useEffect(() => {
+    if (!report) {
+      setBudgetSummary(null);
+      return;
+    }
+    const reportYear = report.periodYear;
+    getBudgets()
+      .then((data) => {
+        const budgets = data.budgets;
+        // Prefer CONFIRMED budget for this year, then DRAFT, then next year
+        const match =
+          budgets.find((b) => b.year === reportYear && b.status === "CONFIRMED") ??
+          budgets.find((b) => b.year === reportYear) ??
+          budgets.find((b) => b.year === reportYear + 1 && b.status === "CONFIRMED") ??
+          budgets.find((b) => b.year === reportYear + 1);
+        if (match) {
+          setBudgetSummary({ summary: match.summary, year: match.year, name: match.name });
+        } else {
+          setBudgetSummary(null);
+        }
+      })
+      .catch(() => setBudgetSummary(null));
+  }, [report?.periodYear, report?.id]);
+
   // Loading skeleton
   if (loading) {
     return (
@@ -256,6 +282,28 @@ export default function DashboardPage() {
 
   // Comparison deltas
   const compAvgTicket = comp && comp.totalSales > 0 ? comp.totalRevenueGross / comp.totalSales : null;
+
+  // Budget targets — monthly portion of annual budget
+  const numMonths = isRangeMode && r.aggregatedPeriods ? r.aggregatedPeriods : 1;
+  function budgetTarget(annualValue: number, actual: number) {
+    if (!budgetSummary) return undefined;
+    const target = (annualValue / 12) * numMonths;
+    const pct = target > 0 ? (actual / target) * 100 : 0;
+    return {
+      label: `Budget ${budgetSummary.year}`,
+      targetValue: formatCurrency(target),
+      achievementPct: Math.round(pct * 10) / 10,
+    };
+  }
+  function budgetTargetPct(budgetPct: number, actualPct: number) {
+    if (!budgetSummary) return undefined;
+    const pct = budgetPct > 0 ? (actualPct / budgetPct) * 100 : 0;
+    return {
+      label: `Budget ${budgetSummary.year}`,
+      targetValue: formatPercent(budgetPct),
+      achievementPct: Math.round(pct * 10) / 10,
+    };
+  }
 
   // Build title + subtitle
   let title: string;
@@ -348,6 +396,7 @@ export default function DashboardPage() {
           accentColor={COLORS.accentBlue}
           delta={comp ? pctChange(r.totalRevenueGross, comp.totalRevenueGross) : null}
           previousValue={comp ? formatCurrency(comp.totalRevenueGross) : null}
+          budgetTarget={budgetSummary ? budgetTarget(budgetSummary.summary.totalForecastRevenue, r.totalRevenueGross) : null}
         />
         <KPICardWithDelta
           label="Fatturato Netto"
@@ -370,6 +419,7 @@ export default function DashboardPage() {
           accentColor={COLORS.accentGreen}
           delta={comp ? pctChange(r.totalPieces, comp.totalPieces) : null}
           previousValue={comp ? `${formatInteger(comp.totalPieces)} pezzi` : null}
+          budgetTarget={budgetSummary ? budgetTarget(budgetSummary.summary.totalForecastRevenue, r.totalRevenueGross) : null}
         />
         <KPICardWithDelta
           label="Costo del Venduto"
@@ -381,6 +431,7 @@ export default function DashboardPage() {
           accentColor={COLORS.accentAmber}
           delta={comp ? pctChange(r.totalCost, comp.totalCost) : null}
           previousValue={comp ? formatCurrency(comp.totalCost) : null}
+          budgetTarget={budgetSummary ? budgetTarget(budgetSummary.summary.totalForecastCOGS, r.totalCost) : null}
         />
       </div>
 
@@ -396,6 +447,7 @@ export default function DashboardPage() {
           accentColor={COLORS.accentGreen}
           delta={comp ? pctChange(r.totalMargin, comp.totalMargin) : null}
           previousValue={comp ? formatCurrency(comp.totalMargin) : null}
+          budgetTarget={budgetSummary ? budgetTarget(budgetSummary.summary.totalForecastMargin, r.totalMargin) : null}
         />
         <KPICardWithDelta
           label="Margine %"
@@ -407,6 +459,7 @@ export default function DashboardPage() {
           accentColor={COLORS.accentPurple}
           delta={comp ? r.totalMarginPct - comp.totalMarginPct : null}
           previousValue={comp ? formatPercent(comp.totalMarginPct) : null}
+          budgetTarget={budgetSummary ? budgetTargetPct(budgetSummary.summary.forecastMarginPct, r.totalMarginPct) : null}
         />
         <KPICardWithDelta
           label="Scontrino Medio"
