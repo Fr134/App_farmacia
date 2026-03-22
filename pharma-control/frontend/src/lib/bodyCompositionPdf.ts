@@ -110,14 +110,6 @@ export function generateBodyCompositionPdf(
   doc.setTextColor(16, 185, 129);
   const massaMagraStr = massaMagra.toFixed(2).replace(".", ",") + " Kg";
   doc.text(massaMagraStr, margin + 10, y + 22);
-  // Formula on right
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  const peso = form.peso || "—";
-  const grasso = form.grassoCorporeo || "—";
-  doc.text(`Formula: ${peso} × (1 − ${grasso}% / 100)`, pageWidth - margin - 5, y + 16, {
-    align: "right",
-  });
 
   // ── Data Grid ──
   y += boxH + 14;
