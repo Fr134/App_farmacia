@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3 } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
@@ -12,11 +12,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { user, isAdmin, logout } = useAuth();
 
   const navItems = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
-    { to: "/expenses", label: "Spese", icon: Receipt, show: true },
-    { to: "/budget", label: "Budget", icon: BarChart3, show: true },
-    { to: "/upload", label: "Carica Report", icon: Upload, show: true },
-    { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true, section: "gestione" },
+    { to: "/expenses", label: "Spese", icon: Receipt, show: true, section: "gestione" },
+    { to: "/budget", label: "Budget", icon: BarChart3, show: true, section: "gestione" },
+    { to: "/upload", label: "Carica Report", icon: Upload, show: true, section: "gestione" },
+    { to: "/users", label: "Utenti", icon: Users, show: isAdmin, section: "gestione" },
+    { to: "/tools/body-composition", label: "Composizione Corporea", icon: Activity, show: true, section: "strumenti" },
   ];
 
   return (
@@ -63,30 +64,44 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3">
-          {navItems
-            .filter((item) => item.show)
-            .map(({ to, label, icon: Icon }) => {
+          {(() => {
+            const visible = navItems.filter((item) => item.show);
+            let lastSection = "";
+            return visible.map(({ to, label, icon: Icon, section }) => {
               const isActive = pathname === to || (to !== "/" && pathname.startsWith(to + "/"));
+              const showSectionHeader = section !== lastSection;
+              lastSection = section;
               return (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={onClose}
-                  className={`
-                    flex items-center gap-3 rounded-btn px-3 py-2.5 mb-1
-                    text-sm font-medium transition-colors
-                    ${
-                      isActive
-                        ? "border-l-2 border-accent-blue bg-accent-blue/10 text-text-primary"
-                        : "border-l-2 border-transparent text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
-                    }
-                  `}
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                  {label}
-                </Link>
+                <div key={to}>
+                  {showSectionHeader && section === "strumenti" && (
+                    <div className="flex items-center gap-2 mt-5 mb-2 px-3">
+                      <Wrench className="h-3.5 w-3.5 text-text-dim" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-dim">
+                        Strumenti
+                      </span>
+                      <div className="flex-1 border-t border-border-card" />
+                    </div>
+                  )}
+                  <Link
+                    to={to}
+                    onClick={onClose}
+                    className={`
+                      flex items-center gap-3 rounded-btn px-3 py-2.5 mb-1
+                      text-sm font-medium transition-colors
+                      ${
+                        isActive
+                          ? "border-l-2 border-accent-blue bg-accent-blue/10 text-text-primary"
+                          : "border-l-2 border-transparent text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
+                      }
+                    `}
+                  >
+                    <Icon className="h-[18px] w-[18px]" />
+                    {label}
+                  </Link>
+                </div>
               );
-            })}
+            });
+          })()}
         </nav>
 
         {/* User info + logout */}

@@ -10,6 +10,7 @@ import UsersPage from "@/pages/UsersPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import BudgetListPage from "@/pages/BudgetListPage";
 import BudgetDetailPage from "@/pages/BudgetDetailPage";
+import BodyCompositionPage from "@/pages/BodyCompositionPage";
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/budget" element={<BudgetListPage />} />
             <Route path="/budget/:id" element={<BudgetDetailPage />} />
             <Route path="/upload" element={<UploadPage />} />
+            <Route path="/tools/body-composition" element={<BodyCompositionPage />} />
             <Route
               path="/users"
               element={
