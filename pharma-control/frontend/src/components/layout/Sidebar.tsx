@@ -10,12 +10,13 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { pathname } = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const isOperator = user?.role === "operator";
 
   const navItems = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true, section: "gestione" },
-    { to: "/expenses", label: "Spese", icon: Receipt, show: true, section: "gestione" },
-    { to: "/budget", label: "Budget", icon: BarChart3, show: true, section: "gestione" },
-    { to: "/upload", label: "Carica Report", icon: Upload, show: true, section: "gestione" },
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: !isOperator, section: "gestione" },
+    { to: "/expenses", label: "Spese", icon: Receipt, show: !isOperator, section: "gestione" },
+    { to: "/budget", label: "Budget", icon: BarChart3, show: !isOperator, section: "gestione" },
+    { to: "/upload", label: "Carica Report", icon: Upload, show: !isOperator, section: "gestione" },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin, section: "gestione" },
     { to: "/tools/body-composition", label: "Composizione Corporea", icon: Activity, show: true, section: "strumenti" },
   ];
@@ -116,10 +117,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   className={`inline-block mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                     user.role === "admin"
                       ? "bg-accent-purple/15 text-accent-purple"
-                      : "bg-accent-blue/15 text-accent-blue"
+                      : user.role === "operator"
+                        ? "bg-accent-green/15 text-accent-green"
+                        : "bg-accent-blue/15 text-accent-blue"
                   }`}
                 >
-                  {user.role === "admin" ? "Admin" : "Viewer"}
+                  {user.role === "admin" ? "Admin" : user.role === "operator" ? "Operatore" : "Viewer"}
                 </span>
               </div>
               <button

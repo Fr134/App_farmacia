@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/async-handler";
-import { authenticate } from "../middleware/auth";
+import { authenticate, authorize } from "../middleware/auth";
 import * as expenseService from "../services/expense.service";
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, authorize("admin", "viewer"));
 
 // GET /api/expense-categories
 router.get(

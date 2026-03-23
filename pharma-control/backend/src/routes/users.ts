@@ -14,14 +14,14 @@ const createUserSchema = z.object({
   email: z.string().email("Email non valida"),
   password: z.string().min(6, "La password deve avere almeno 6 caratteri"),
   name: z.string().min(1, "Nome obbligatorio"),
-  role: z.enum(["admin", "viewer"], {
-    errorMap: () => ({ message: "Il ruolo deve essere 'admin' o 'viewer'" }),
+  role: z.enum(["admin", "viewer", "operator"], {
+    errorMap: () => ({ message: "Il ruolo deve essere 'admin', 'viewer' o 'operator'" }),
   }),
 });
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(["admin", "viewer"]).optional(),
+  role: z.enum(["admin", "viewer", "operator"]).optional(),
   password: z.string().min(6).optional(),
 });
 

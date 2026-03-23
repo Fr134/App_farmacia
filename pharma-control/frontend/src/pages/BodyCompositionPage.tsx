@@ -145,11 +145,18 @@ export default function BodyCompositionPage() {
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-text-dim">Formula</p>
-              <p className="text-sm font-mono text-text-muted">
-                {formatItalianDecimal(peso, 1)} × (1 − {formatItalianDecimal(grassoCorporeo, 1)}% / 100)
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-cyan/15">
+                <Percent className="h-6 w-6 text-accent-cyan" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-muted">
+                  % Massa Magra
+                </p>
+                <p className="text-3xl font-bold font-mono text-accent-cyan">
+                  {formatItalianDecimal(massaMagra / peso * 100, 1)}%
+                </p>
+              </div>
             </div>
           </div>
         </div>

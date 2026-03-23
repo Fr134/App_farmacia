@@ -94,22 +94,36 @@ export function generateBodyCompositionPdf(
   // ── Massa Magra Result Box ──
   y += 12;
   const boxH = 28;
-  // Green gradient-like background
-  doc.setFillColor(16, 185, 129, 0.1);
+  const halfBox = (contentWidth - 6) / 2;
+
+  // Left box: Massa Magra Kg
   doc.setFillColor(10, 35, 25);
-  doc.roundedRect(margin, y, contentWidth, boxH, 4, 4, "F");
-  // Left accent
+  doc.roundedRect(margin, y, halfBox, boxH, 4, 4, "F");
   doc.setFillColor(16, 185, 129);
   doc.roundedRect(margin, y, 3, boxH, 2, 2, "F");
-  // Label
   doc.setFontSize(10);
   doc.setTextColor(148, 163, 184);
   doc.text("MASSA MAGRA CALCOLATA", margin + 10, y + 10);
-  // Value
   doc.setFontSize(22);
   doc.setTextColor(16, 185, 129);
   const massaMagraStr = massaMagra.toFixed(2).replace(".", ",") + " Kg";
   doc.text(massaMagraStr, margin + 10, y + 22);
+
+  // Right box: % Massa Magra
+  const rightX = margin + halfBox + 6;
+  const peso = parseFloat(form.peso?.replace(",", ".") || "0") || 0;
+  const massaMagraPct = peso > 0 ? (massaMagra / peso) * 100 : 0;
+  doc.setFillColor(8, 30, 35);
+  doc.roundedRect(rightX, y, halfBox, boxH, 4, 4, "F");
+  doc.setFillColor(6, 182, 212);
+  doc.roundedRect(rightX, y, 3, boxH, 2, 2, "F");
+  doc.setFontSize(10);
+  doc.setTextColor(148, 163, 184);
+  doc.text("% MASSA MAGRA", rightX + 10, y + 10);
+  doc.setFontSize(22);
+  doc.setTextColor(6, 182, 212);
+  const massaMagraPctStr = massaMagraPct.toFixed(1).replace(".", ",") + "%";
+  doc.text(massaMagraPctStr, rightX + 10, y + 22);
 
   // ── Data Grid ──
   y += boxH + 14;

@@ -6,7 +6,7 @@ import * as expenseService from "../services/expense.service";
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, authorize("admin", "viewer"));
 
 // GET /api/expenses
 router.get(

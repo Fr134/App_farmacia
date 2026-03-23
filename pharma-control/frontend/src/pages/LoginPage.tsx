@@ -4,7 +4,7 @@ import { Pill, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const { isAuthenticated, loading: authLoading, login } = useAuth();
+  const { isAuthenticated, isOperator, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function LoginPage() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={isOperator ? "/tools/body-composition" : "/dashboard"} replace />;
   }
 
   async function handleSubmit(e: FormEvent) {

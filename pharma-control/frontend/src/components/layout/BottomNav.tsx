@@ -4,13 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function BottomNav() {
   const { pathname } = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isOperator } = useAuth();
 
   const items = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
-    { to: "/expenses", label: "Spese", icon: Receipt, show: true },
-    { to: "/budget", label: "Budget", icon: BarChart3, show: true },
-    { to: "/upload", label: "Carica", icon: Upload, show: true },
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: !isOperator },
+    { to: "/expenses", label: "Spese", icon: Receipt, show: !isOperator },
+    { to: "/budget", label: "Budget", icon: BarChart3, show: !isOperator },
+    { to: "/upload", label: "Carica", icon: Upload, show: !isOperator },
     { to: "/tools/body-composition", label: "Corpo", icon: Activity, show: true },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin },
   ];

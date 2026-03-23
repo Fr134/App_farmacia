@@ -7,7 +7,7 @@ import { ValidationError } from "../services/budget.service";
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, authorize("admin", "viewer"));
 
 // GET /api/budgets
 router.get(

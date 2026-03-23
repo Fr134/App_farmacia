@@ -173,10 +173,12 @@ export default function UsersPage() {
                       className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
                         user.role === "admin"
                           ? "bg-accent-purple/15 text-accent-purple"
-                          : "bg-accent-blue/15 text-accent-blue"
+                          : user.role === "operator"
+                            ? "bg-accent-green/15 text-accent-green"
+                            : "bg-accent-blue/15 text-accent-blue"
                       }`}
                     >
-                      {user.role === "admin" ? "Admin" : "Viewer"}
+                      {user.role === "admin" ? "Admin" : user.role === "operator" ? "Operatore" : "Viewer"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-text-dim font-mono">
@@ -284,6 +286,7 @@ export default function UsersPage() {
                 className="w-full rounded-btn border border-border-card bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-blue"
               >
                 <option value="viewer">Viewer</option>
+                <option value="operator">Operatore</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

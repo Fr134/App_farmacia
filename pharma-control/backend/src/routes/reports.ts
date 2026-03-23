@@ -6,8 +6,8 @@ import { generateAlerts } from "../services/alert-engine";
 
 const router = Router();
 
-// All report routes require authentication
-router.use(authenticate);
+// All report routes require authentication and financial access (no operators)
+router.use(authenticate, authorize("admin", "viewer"));
 
 // GET /api/reports — list all reports
 router.get(

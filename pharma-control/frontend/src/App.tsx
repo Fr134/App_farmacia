@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
+import FinancialRoute from "@/components/auth/FinancialRoute";
 import MainLayout from "@/components/layout/MainLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -11,6 +12,11 @@ import ExpensesPage from "@/pages/ExpensesPage";
 import BudgetListPage from "@/pages/BudgetListPage";
 import BudgetDetailPage from "@/pages/BudgetDetailPage";
 import BodyCompositionPage from "@/pages/BodyCompositionPage";
+
+function DefaultRedirect() {
+  const { isOperator } = useAuth();
+  return <Navigate to={isOperator ? "/tools/body-composition" : "/dashboard"} replace />;
+}
 
 export default function App() {
   return (
@@ -26,11 +32,11 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/budget" element={<BudgetListPage />} />
-            <Route path="/budget/:id" element={<BudgetDetailPage />} />
-            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/dashboard" element={<FinancialRoute><DashboardPage /></FinancialRoute>} />
+            <Route path="/expenses" element={<FinancialRoute><ExpensesPage /></FinancialRoute>} />
+            <Route path="/budget" element={<FinancialRoute><BudgetListPage /></FinancialRoute>} />
+            <Route path="/budget/:id" element={<FinancialRoute><BudgetDetailPage /></FinancialRoute>} />
+            <Route path="/upload" element={<FinancialRoute><UploadPage /></FinancialRoute>} />
             <Route path="/tools/body-composition" element={<BodyCompositionPage />} />
             <Route
               path="/users"
@@ -40,8 +46,8 @@ export default function App() {
                 </AdminRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<DefaultRedirect />} />
+            <Route path="*" element={<DefaultRedirect />} />
           </Route>
         </Routes>
       </AuthProvider>
