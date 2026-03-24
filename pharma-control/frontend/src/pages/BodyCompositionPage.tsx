@@ -14,9 +14,11 @@ import {
   Download,
   RotateCcw,
   Calculator,
+  Printer,
 } from "lucide-react";
 import SectionCard from "@/components/ui/SectionCard";
 import { generateBodyCompositionPdf } from "@/lib/bodyCompositionPdf";
+import { generateBlankFormPdf } from "@/lib/bodyCompositionBlankPdf";
 
 interface FormField {
   key: string;
@@ -106,6 +108,13 @@ export default function BodyCompositionPage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={generateBlankFormPdf}
+            className="flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium text-text-muted hover:bg-white/[0.03] hover:text-text-primary transition-colors"
+          >
+            <Printer className="h-4 w-4" />
+            Stampa Scheda
+          </button>
+          <button
             onClick={handleReset}
             className="flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium text-text-muted hover:bg-white/[0.03] hover:text-text-primary transition-colors"
           >
@@ -164,13 +173,13 @@ export default function BodyCompositionPage() {
 
       {/* Form */}
       <SectionCard title="Dati Rilevazione" subtitle="Compila i campi dalla bilancia impedenziometrica">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FORM_FIELDS.map((field) => {
             const Icon = field.icon;
             return (
               <div key={field.key} className="group">
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-text-muted">
-                  <Icon className={`h-3.5 w-3.5 text-${field.color}`} />
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
+                  <Icon className={`h-4 w-4 text-${field.color}`} />
                   {field.label}
                 </label>
                 <div className="relative">
@@ -181,15 +190,15 @@ export default function BodyCompositionPage() {
                     onChange={(e) => handleChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
                     className={`
-                      w-full rounded-btn border border-border-card bg-white/[0.03] px-3 py-2.5
-                      text-sm text-text-primary placeholder:text-text-dim/50
+                      w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5
+                      text-base text-text-primary placeholder:text-text-dim/50
                       focus:border-${field.color} focus:outline-none focus:ring-1 focus:ring-${field.color}/30
                       transition-colors font-mono
                       ${field.key === "nome" ? "font-sans" : ""}
                     `}
                   />
                   {field.unit && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-dim">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-text-dim">
                       {field.unit}
                     </span>
                   )}
