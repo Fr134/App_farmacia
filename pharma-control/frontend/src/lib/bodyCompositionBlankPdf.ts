@@ -118,15 +118,6 @@ export function generateBlankFormPdf() {
   doc.setLineWidth(0.3);
   doc.line(margin, footerY, pageWidth - margin, footerY);
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(150, 150, 150);
-  doc.text(
-    "La Massa Magra e la relativa percentuale vengono calcolate automaticamente tramite l'app PharmaControl.",
-    pageWidth / 2,
-    footerY + 5,
-    { align: "center" }
-  );
 
   // ── Save ──
   doc.save("scheda_composizione_corporea.pdf");
