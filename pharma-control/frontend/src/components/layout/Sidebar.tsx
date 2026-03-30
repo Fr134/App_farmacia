@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
@@ -19,6 +19,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { to: "/upload", label: "Carica Report", icon: Upload, show: !isOperator, section: "gestione" },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin, section: "gestione" },
     { to: "/tools/body-composition", label: "Composizione Corporea", icon: Activity, show: true, section: "strumenti" },
+    { to: "/tools/sivat", label: "Aderenza Terapeutica", icon: ClipboardCheck, show: true, section: "strumenti" },
   ];
 
   return (
