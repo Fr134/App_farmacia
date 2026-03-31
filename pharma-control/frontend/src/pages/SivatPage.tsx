@@ -17,392 +17,47 @@ import {
   XCircle,
   ToggleLeft,
   ToggleRight,
+  Save,
+  History,
+  Loader2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import SectionCard from "@/components/ui/SectionCard";
 import { generateSivatPdf } from "@/lib/sivatPdf";
+import { createSivatAssessment } from "@/services/api";
+import {
+  type SivatSectionDef,
+  type SivatQuestion,
+  type Answers,
+  SECTION_A,
+  SECTION_B,
+  SECTION_B_QUESTION,
+  SECTION_C,
+  SECTION_D,
+  SECTION_E,
+  ALL_SECTIONS,
+  SUPPORT_OPTIONS,
+  getSectionScore,
+  getScoreClass,
+  getCriticalities,
+  getSuggestedInterventions,
+} from "@/lib/sivatData";
 
-// ── Types ──
-
-interface SivatOption {
-  label: string;
-  value: number;
-}
-
-interface SivatQuestion {
-  id: string;
-  text: string;
-  options: SivatOption[];
-}
-
-interface SivatSection {
-  id: string;
-  letter: string;
-  title: string;
-  subtitle: string;
-  maxScore: number;
-  color: string;
-  icon: React.ElementType;
-  questions: SivatQuestion[];
-}
-
-// ── Section Definitions ──
-
-const SECTION_A: SivatSection = {
-  id: "a",
-  letter: "A",
-  title: "Aderenza Comportamentale Dichiarata",
-  subtitle: "Ciò che il paziente riferisce · max 20 punti",
-  maxScore: 20,
-  color: "accent-blue",
-  icon: Brain,
-  questions: [
-    {
-      id: "a1",
-      text: "Negli ultimi 7 giorni, quante volte ha saltato una dose?",
-      options: [
-        { label: "Mai", value: 4 },
-        { label: "1 volta", value: 3 },
-        { label: "2 volte", value: 2 },
-        { label: "3 o più", value: 1 },
-        { label: "Quasi sempre / non sa", value: 0 },
-      ],
-    },
-    {
-      id: "a2",
-      text: "Le capita di cambiare orario o dose senza parlarne con medico o farmacia?",
-      options: [
-        { label: "Mai", value: 4 },
-        { label: "Raramente", value: 3 },
-        { label: "A volte", value: 2 },
-        { label: "Spesso", value: 1 },
-        { label: "Molto spesso", value: 0 },
-      ],
-    },
-    {
-      id: "a3",
-      text: "Quando si sente bene, tende a trascurare o sospendere la terapia?",
-      options: [
-        { label: "Mai", value: 4 },
-        { label: "Raramente", value: 3 },
-        { label: "A volte", value: 2 },
-        { label: "Spesso", value: 1 },
-        { label: "Sì, spesso", value: 0 },
-      ],
-    },
-    {
-      id: "a4",
-      text: "Se compare un effetto indesiderato, interrompe il farmaco prima di confrontarsi con qualcuno?",
-      options: [
-        { label: "Mai", value: 4 },
-        { label: "Raramente", value: 3 },
-        { label: "A volte", value: 2 },
-        { label: "Spesso", value: 1 },
-        { label: "Sempre / quasi sempre", value: 0 },
-      ],
-    },
-    {
-      id: "a5",
-      text: "Quanto si sente costante nel seguire la terapia ogni giorno?",
-      options: [
-        { label: "Molto costante", value: 4 },
-        { label: "Abbastanza", value: 3 },
-        { label: "Discontinuo", value: 2 },
-        { label: "Poco costante", value: 1 },
-        { label: "Per niente", value: 0 },
-      ],
-    },
-  ],
+// Icon mapping for sections (kept here to avoid React dependency in sivatData)
+const SECTION_ICONS: Record<string, React.ElementType> = {
+  a: Brain,
+  b: Pill,
+  c: Settings,
+  d: Heart,
+  e: ShieldAlert,
 };
 
-const SECTION_B_QUESTION: SivatQuestion = {
-  id: "b1",
-  text: "PDC — Proportion of Days Covered",
-  options: [
-    { label: "≥ 90%", value: 25 },
-    { label: "80–89%", value: 22 },
-    { label: "70–79%", value: 18 },
-    { label: "60–69%", value: 12 },
-    { label: "40–59%", value: 6 },
-    { label: "< 40%", value: 0 },
-  ],
+const SCORE_ICONS: Record<string, React.ElementType> = {
+  "accent-green": CheckCircle2,
+  "accent-blue": CheckCircle2,
+  "accent-amber": AlertTriangle,
+  "accent-red": XCircle,
 };
-
-const SECTION_B: SivatSection = {
-  id: "b",
-  letter: "B",
-  title: "Aderenza Oggettiva di Copertura / Refill",
-  subtitle: "Indicatore oggettivo PDC · max 25 punti",
-  maxScore: 25,
-  color: "accent-green",
-  icon: Pill,
-  questions: [SECTION_B_QUESTION],
-};
-
-const SECTION_C: SivatSection = {
-  id: "c",
-  letter: "C",
-  title: "Complessità Terapeutica / Rischio Strutturale",
-  subtitle: "Fragilità del regime terapeutico · max 15 punti",
-  maxScore: 15,
-  color: "accent-amber",
-  icon: Settings,
-  questions: [
-    {
-      id: "c1",
-      text: "Numero di farmaci cronici",
-      options: [
-        { label: "1–3 farmaci", value: 3 },
-        { label: "4–6 farmaci", value: 2 },
-        { label: "Più di 6", value: 0 },
-      ],
-    },
-    {
-      id: "c2",
-      text: "Assunzioni al giorno",
-      options: [
-        { label: "1 volta/die", value: 3 },
-        { label: "2 volte/die", value: 2 },
-        { label: "3 volte/die", value: 1 },
-        { label: "4 o più", value: 0 },
-      ],
-    },
-    {
-      id: "c3",
-      text: "Complessità degli orari",
-      options: [
-        { label: "Semplici / allineati ai pasti", value: 3 },
-        { label: "Orari misti", value: 2 },
-        { label: "Schema complesso", value: 0 },
-      ],
-    },
-    {
-      id: "c4",
-      text: "Presenza caregiver",
-      options: [
-        { label: "Caregiver affidabile", value: 3 },
-        { label: "Supporto saltuario", value: 2 },
-        { label: "Nessun supporto (pz. fragile)", value: 0 },
-      ],
-    },
-    {
-      id: "c5",
-      text: "Cambi recenti di terapia",
-      options: [
-        { label: "Nessun cambio recente", value: 3 },
-        { label: "Cambio ultimi 30–60 giorni", value: 2 },
-        { label: "Più cambi / terapia instabile", value: 0 },
-      ],
-    },
-  ],
-};
-
-const SECTION_D: SivatSection = {
-  id: "d",
-  letter: "D",
-  title: "Capacità di Gestione e Comprensione",
-  subtitle: "Autoefficacia e comprensione · max 15 punti",
-  maxScore: 15,
-  color: "accent-purple",
-  icon: Heart,
-  questions: [
-    {
-      id: "d1",
-      text: "Sa dire a cosa servono i suoi farmaci principali?",
-      options: [
-        { label: "Sì, bene", value: 3 },
-        { label: "In parte", value: 2 },
-        { label: "Poco", value: 1 },
-        { label: "No", value: 0 },
-      ],
-    },
-    {
-      id: "d2",
-      text: "Sa quando e come assumerli correttamente?",
-      options: [
-        { label: "Sì, sempre", value: 3 },
-        { label: "Quasi sempre", value: 2 },
-        { label: "Con dubbi", value: 1 },
-        { label: "No", value: 0 },
-      ],
-    },
-    {
-      id: "d3",
-      text: "Sa cosa fare se dimentica una dose?",
-      options: [
-        { label: "Sì", value: 3 },
-        { label: "In parte", value: 2 },
-        { label: "No", value: 0 },
-      ],
-    },
-    {
-      id: "d4",
-      text: "Si sente sicuro nel gestire da solo la terapia?",
-      options: [
-        { label: "Molto", value: 3 },
-        { label: "Abbastanza", value: 2 },
-        { label: "Poco", value: 1 },
-        { label: "Per niente", value: 0 },
-      ],
-    },
-    {
-      id: "d5",
-      text: "Ha difficoltà visive, manuali o cognitive che interferiscono?",
-      options: [
-        { label: "No", value: 3 },
-        { label: "Lievi", value: 2 },
-        { label: "Moderate", value: 1 },
-        { label: "Importanti", value: 0 },
-      ],
-    },
-  ],
-};
-
-const SECTION_E: SivatSection = {
-  id: "e",
-  letter: "E",
-  title: "Competenza Tecnica su Device",
-  subtitle: "Penna, inalatore, collirio, eparina, cerotto · max 15 punti",
-  maxScore: 15,
-  color: "accent-red",
-  icon: ShieldAlert,
-  questions: [
-    {
-      id: "e1",
-      text: "Prepara correttamente il device",
-      options: [
-        { label: "Correttamente", value: 3 },
-        { label: "Errori minori", value: 2 },
-        { label: "Errori importanti", value: 1 },
-        { label: "Non è in grado", value: 0 },
-      ],
-    },
-    {
-      id: "e2",
-      text: "Esegue correttamente la somministrazione",
-      options: [
-        { label: "Correttamente", value: 3 },
-        { label: "Errori minori", value: 2 },
-        { label: "Errori importanti", value: 1 },
-        { label: "Non è in grado", value: 0 },
-      ],
-    },
-    {
-      id: "e3",
-      text: "Rispetta tempi e modalità (inspirazione, rotazione sede, priming...)",
-      options: [
-        { label: "Correttamente", value: 3 },
-        { label: "Errori minori", value: 2 },
-        { label: "Errori importanti", value: 1 },
-        { label: "Non è in grado", value: 0 },
-      ],
-    },
-    {
-      id: "e4",
-      text: "Conserva correttamente il farmaco/device",
-      options: [
-        { label: "Correttamente", value: 3 },
-        { label: "Errori minori", value: 2 },
-        { label: "Errori importanti", value: 1 },
-        { label: "Non è in grado", value: 0 },
-      ],
-    },
-    {
-      id: "e5",
-      text: "Sa ripetere la procedura senza aiuto",
-      options: [
-        { label: "Sì, autonomamente", value: 3 },
-        { label: "Con indicazioni", value: 2 },
-        { label: "Solo con aiuto", value: 1 },
-        { label: "No", value: 0 },
-      ],
-    },
-  ],
-};
-
-const SUPPORT_OPTIONS: SivatOption[] = [
-  { label: "Nessun supporto", value: 0 },
-  { label: "Reminder / foglio terapia / pilloliera semplice", value: 1 },
-  { label: "Pilloliera preparata da caregiver", value: 2 },
-  { label: "Deblistering personalizzato con monitoraggio farmacia", value: 3 },
-];
-
-const ALL_SECTIONS: SivatSection[] = [SECTION_A, SECTION_B, SECTION_C, SECTION_D, SECTION_E];
-
-// ── Helpers ──
-
-type Answers = Record<string, number | null>;
-
-function getSectionScore(section: SivatSection, answers: Answers): number | null {
-  let total = 0;
-  let allAnswered = true;
-  for (const q of section.questions) {
-    const val = answers[q.id];
-    if (val === null || val === undefined) {
-      allAnswered = false;
-    } else {
-      total += val;
-    }
-  }
-  return allAnswered ? total : null;
-}
-
-function getScoreClass(score: number): { label: string; color: string; icon: React.ElementType } {
-  if (score >= 85) return { label: "Aderenza alta", color: "accent-green", icon: CheckCircle2 };
-  if (score >= 70) return { label: "Aderenza buona ma fragile", color: "accent-blue", icon: CheckCircle2 };
-  if (score >= 50) return { label: "Aderenza parziale / rischio elevato", color: "accent-amber", icon: AlertTriangle };
-  return { label: "Non aderenza clinicamente rilevante", color: "accent-red", icon: XCircle };
-}
-
-function getCriticalities(
-  sectionScores: Record<string, number | null>,
-  sectionEEnabled: boolean
-): string[] {
-  const crits: string[] = [];
-  const a = sectionScores.a;
-  const b = sectionScores.b;
-  const c = sectionScores.c;
-  const d = sectionScores.d;
-  const e = sectionScores.e;
-
-  if (a !== null && a <= 10) crits.push("Prevalenza di dimenticanze e comportamento irregolare");
-  if (b !== null && b <= 12) crits.push("Bassa copertura refill / ritiri tardivi");
-  if (c !== null && c <= 7) crits.push("Elevata complessità terapeutica");
-  if (d !== null && d <= 7) crits.push("Scarsa autonomia e comprensione della terapia");
-  if (sectionEEnabled && e !== null && e <= 7) crits.push("Tecnica errata nell'uso del device");
-
-  return crits;
-}
-
-function getSuggestedInterventions(
-  sectionScores: Record<string, number | null>,
-  supportLevel: number | null,
-  sectionEEnabled: boolean
-): string[] {
-  const interventions: string[] = [];
-  const a = sectionScores.a;
-  const b = sectionScores.b;
-  const c = sectionScores.c;
-  const d = sectionScores.d;
-  const e = sectionScores.e;
-
-  if ((a !== null && a <= 12) || (b !== null && b <= 12))
-    interventions.push("Deblistering personalizzato");
-  if (c !== null && c <= 7)
-    interventions.push("Semplificazione schema terapeutico (consultare medico)");
-  if (d !== null && d <= 7)
-    interventions.push("Counseling farmaceutico sulla terapia");
-  if (sectionEEnabled && e !== null && e <= 7)
-    interventions.push("Educazione tecnica sull'uso del device");
-  if (supportLevel !== null && supportLevel <= 1)
-    interventions.push("Follow-up attivo a 30 giorni");
-
-  if (interventions.length === 0 && a !== null)
-    interventions.push("Mantenimento e monitoraggio periodico");
-
-  return interventions;
-}
-
-// ── Component ──
 
 export default function SivatPage() {
   const [patientName, setPatientName] = useState("");
@@ -422,6 +77,9 @@ export default function SivatPage() {
   });
   const [pdcDaysCovered, setPdcDaysCovered] = useState("");
   const [pdcDaysObserved, setPdcDaysObserved] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleAnswer = (questionId: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -475,7 +133,6 @@ export default function SivatPage() {
 
     if (!allComplete) return null;
 
-    // Reparametrize to 100 if section E is excluded
     const finalScore = sectionEEnabled
       ? rawTotal
       : Math.round((rawTotal / maxPossible) * 100);
@@ -508,12 +165,64 @@ export default function SivatPage() {
     setSupportLevel(null);
     setPdcDaysCovered("");
     setPdcDaysObserved("");
+    setSaveSuccess(false);
+    setSaveError(null);
   };
 
-  const canDownload = patientName.trim().length > 0 && totalResult !== null;
+  const canSave = patientName.trim().length > 0 && totalResult !== null;
 
-  const handleDownloadPdf = () => {
-    if (!canDownload || !totalResult) return;
+  const handleSaveAndDownload = async () => {
+    if (!canSave || !totalResult) return;
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      const scoreClass = getScoreClass(totalResult.finalScore);
+      await createSivatAssessment({
+        patientName: patientName.trim(),
+        scoreA: sectionScores.a!,
+        scoreB: sectionScores.b!,
+        scoreC: sectionScores.c!,
+        scoreD: sectionScores.d!,
+        scoreE: sectionEEnabled ? sectionScores.e! : null,
+        sectionEEnabled,
+        supportLevel,
+        totalScore: totalResult.finalScore,
+        rawScore: totalResult.rawTotal,
+        maxPossible: totalResult.maxPossible,
+        classification: scoreClass.classKey,
+        pdcPercentage: pdcPercentage ?? null,
+        pdcDaysCovered: pdcDaysCovered ? parseInt(pdcDaysCovered) || null : null,
+        pdcDaysObserved: pdcDaysObserved ? parseInt(pdcDaysObserved) || null : null,
+        answers,
+        criticalities,
+        interventions,
+      });
+
+      setSaveSuccess(true);
+
+      // Generate PDF after successful save
+      generateSivatPdf({
+        patientName,
+        answers,
+        sectionScores,
+        sectionEEnabled,
+        supportLevel,
+        totalScore: totalResult.finalScore,
+        criticalities,
+        interventions,
+        pdcPercentage,
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Errore durante il salvataggio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadPdfOnly = () => {
+    if (!canSave || !totalResult) return;
     generateSivatPdf({
       patientName,
       answers,
@@ -562,8 +271,8 @@ export default function SivatPage() {
     );
   }
 
-  function renderSectionHeader(section: SivatSection, score: number | null) {
-    const Icon = section.icon;
+  function renderSectionHeader(section: SivatSectionDef, score: number | null) {
+    const Icon = SECTION_ICONS[section.id] ?? ClipboardCheck;
     const isExpanded = expandedSections[section.id];
     const ChevIcon = isExpanded ? ChevronUp : ChevronDown;
     const pct = score !== null ? Math.round((score / section.maxScore) * 100) : 0;
@@ -628,6 +337,13 @@ export default function SivatPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/tools/sivat/history"
+            className="flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium text-text-muted hover:bg-white/[0.03] hover:text-text-primary transition-colors"
+          >
+            <History className="h-4 w-4" />
+            Storico
+          </Link>
           <button
             onClick={handleReset}
             className="flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium text-text-muted hover:bg-white/[0.03] hover:text-text-primary transition-colors"
@@ -636,93 +352,121 @@ export default function SivatPage() {
             Reset
           </button>
           <button
-            onClick={handleDownloadPdf}
-            disabled={!canDownload}
+            onClick={handleDownloadPdfOnly}
+            disabled={!canSave}
+            className={`flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium transition-colors ${
+              canSave
+                ? "text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
+                : "text-text-dim cursor-not-allowed"
+            }`}
+          >
+            <Download className="h-4 w-4" />
+            Solo PDF
+          </button>
+          <button
+            onClick={handleSaveAndDownload}
+            disabled={!canSave || saving}
             className={`flex items-center gap-2 rounded-btn px-4 py-2 text-sm font-semibold transition-colors ${
-              canDownload
+              canSave && !saving
                 ? "bg-accent-blue text-white hover:bg-accent-blue/90"
                 : "bg-white/[0.05] text-text-dim cursor-not-allowed"
             }`}
           >
-            <Download className="h-4 w-4" />
-            Scarica Report
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Salva e Scarica
           </button>
         </div>
       </div>
 
-      {/* Result Card */}
-      {totalResult && (
-        <div
-          className={`relative overflow-hidden rounded-card border border-${getScoreClass(totalResult.finalScore).color}/30 bg-gradient-to-r from-${getScoreClass(totalResult.finalScore).color}/10 via-${getScoreClass(totalResult.finalScore).color}/5 to-transparent`}
-        >
-          <div className={`absolute top-0 left-0 h-full w-1 bg-${getScoreClass(totalResult.finalScore).color}`} />
-          <div className="px-6 py-5">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-${getScoreClass(totalResult.finalScore).color}/15`}>
-                  {(() => {
-                    const ScoreIcon = getScoreClass(totalResult.finalScore).icon;
-                    return <ScoreIcon className={`h-7 w-7 text-${getScoreClass(totalResult.finalScore).color}`} />;
-                  })()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Punteggio SIVAT-D</p>
-                  <p className={`text-4xl font-bold font-mono text-${getScoreClass(totalResult.finalScore).color}`}>
-                    {totalResult.finalScore}
-                    <span className="text-lg text-text-dim">/100</span>
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className={`inline-block rounded-full px-4 py-1.5 text-sm font-semibold bg-${getScoreClass(totalResult.finalScore).color}/15 text-${getScoreClass(totalResult.finalScore).color}`}>
-                  {getScoreClass(totalResult.finalScore).label}
-                </span>
-                {!sectionEEnabled && (
-                  <p className="text-[10px] text-text-dim mt-1">
-                    Punteggio riparametrizzato (sez. E esclusa)
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Criticalities & Interventions */}
-            {(criticalities.length > 0 || interventions.length > 0) && (
-              <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-4">
-                {criticalities.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">
-                      Criticità principali
-                    </p>
-                    <ul className="space-y-1">
-                      {criticalities.map((c) => (
-                        <li key={c} className="flex items-start gap-2 text-xs text-accent-amber">
-                          <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {interventions.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">
-                      Interventi consigliati
-                    </p>
-                    <ul className="space-y-1">
-                      {interventions.map((i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-accent-green">
-                          <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" />
-                          {i}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+      {/* Save feedback */}
+      {saveSuccess && (
+        <div className="flex items-center gap-2 rounded-btn bg-accent-green/10 border border-accent-green/30 px-4 py-3 text-sm text-accent-green">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Valutazione salvata con successo
         </div>
       )}
+      {saveError && (
+        <div className="flex items-center gap-2 rounded-btn bg-accent-red/10 border border-accent-red/30 px-4 py-3 text-sm text-accent-red">
+          <XCircle className="h-4 w-4 shrink-0" />
+          {saveError}
+        </div>
+      )}
+
+      {/* Result Card */}
+      {totalResult && (() => {
+        const sc = getScoreClass(totalResult.finalScore);
+        const ScoreIcon = SCORE_ICONS[sc.color] ?? CheckCircle2;
+        return (
+          <div className={`relative overflow-hidden rounded-card border border-${sc.color}/30 bg-gradient-to-r from-${sc.color}/10 via-${sc.color}/5 to-transparent`}>
+            <div className={`absolute top-0 left-0 h-full w-1 bg-${sc.color}`} />
+            <div className="px-6 py-5">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-${sc.color}/15`}>
+                    <ScoreIcon className={`h-7 w-7 text-${sc.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text-muted">Punteggio SIVAT-D</p>
+                    <p className={`text-4xl font-bold font-mono text-${sc.color}`}>
+                      {totalResult.finalScore}
+                      <span className="text-lg text-text-dim">/100</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-block rounded-full px-4 py-1.5 text-sm font-semibold bg-${sc.color}/15 text-${sc.color}`}>
+                    {sc.label}
+                  </span>
+                  {!sectionEEnabled && (
+                    <p className="text-[10px] text-text-dim mt-1">
+                      Punteggio riparametrizzato (sez. E esclusa)
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {(criticalities.length > 0 || interventions.length > 0) && (
+                <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {criticalities.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">
+                        Criticità principali
+                      </p>
+                      <ul className="space-y-1">
+                        {criticalities.map((c) => (
+                          <li key={c} className="flex items-start gap-2 text-xs text-accent-amber">
+                            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interventions.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">
+                        Interventi consigliati
+                      </p>
+                      <ul className="space-y-1">
+                        {interventions.map((i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-accent-green">
+                            <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" />
+                            {i}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Patient Name */}
       <SectionCard title="Paziente" subtitle="Dati identificativi">
@@ -756,7 +500,6 @@ export default function SivatPage() {
         {renderSectionHeader(SECTION_B, sectionScores.b)}
         {expandedSections.b && (
           <div className="mt-3">
-            {/* PDC Calculator */}
             <div className="py-4 border-b border-border-card/50">
               <p className="text-sm font-medium text-text-primary mb-1">
                 Calcolo PDC (opzionale)
@@ -797,7 +540,6 @@ export default function SivatPage() {
                 )}
               </div>
             </div>
-            {/* Score selection */}
             <div className="py-4">
               <p className="text-sm font-medium text-text-primary mb-1">
                 Fascia di copertura
@@ -950,10 +692,10 @@ export default function SivatPage() {
       </SectionCard>
 
       {/* Info */}
-      {!canDownload && (
+      {!canSave && (
         <p className="text-center text-xs text-text-dim">
           {!patientName.trim()
-            ? "Inserisci il nome del paziente per abilitare il download del report"
+            ? "Inserisci il nome del paziente per abilitare il salvataggio"
             : "Completa tutte le sezioni per generare il report SIVAT-D"}
         </p>
       )}
@@ -965,12 +707,3 @@ export default function SivatPage() {
     </div>
   );
 }
-
-// Export types/data for PDF generator
-export type { Answers };
-export {
-  ALL_SECTIONS,
-  SUPPORT_OPTIONS,
-  getScoreClass,
-  getSectionScore,
-};

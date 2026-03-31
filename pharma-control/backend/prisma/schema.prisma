@@ -15,6 +15,8 @@ model User {
   role        String    @default("viewer")
   created_at  DateTime  @default(now())
   last_login  DateTime?
+
+  sivat_assessments SivatAssessment[]
 }
 
 model Report {
@@ -77,6 +79,55 @@ model SectorData {
   iva_pct            Decimal? @db.Decimal(5, 2)
 
   @@index([report_id])
+}
+
+// ─── SIVAT-D Assessment Module ───────────────────────
+
+model SivatAssessment {
+  id                String   @id @default(cuid())
+
+  user_id           String
+  user              User     @relation(fields: [user_id], references: [id])
+
+  patient_name      String
+
+  // Section scores (denormalized for fast querying)
+  score_a           Int      // 0-20
+  score_b           Int      // 0-25
+  score_c           Int      // 0-15
+  score_d           Int      // 0-15
+  score_e           Int?     // 0-15 (null if section E disabled)
+  section_e_enabled Boolean  @default(false)
+
+  // Support index F (separate, not in total)
+  support_level     Int?     // 0-3
+
+  // Computed totals
+  total_score       Int      // 0-100 (reparametrized if E excluded)
+  raw_score         Int      // raw sum before reparametrization
+  max_possible      Int      // 90 or 75
+
+  // Classification
+  classification    String   // ALTA, BUONA, PARZIALE, NON_ADERENZA
+
+  // PDC data
+  pdc_percentage    Decimal? @db.Decimal(5, 1)
+  pdc_days_covered  Int?
+  pdc_days_observed Int?
+
+  // Full answers as JSON (for reconstruction/PDF regeneration)
+  answers           Json     // Record<string, number | null>
+
+  // Auto-generated results (stored for historical accuracy)
+  criticalities     Json     // string[]
+  interventions     Json     // string[]
+
+  created_at        DateTime @default(now())
+
+  @@index([user_id])
+  @@index([patient_name])
+  @@index([classification])
+  @@index([created_at])
 }
 
 // ─── Enums ────────────────────────────────────────────

@@ -4,7 +4,7 @@ import {
   SUPPORT_OPTIONS,
   getScoreClass,
   type Answers,
-} from "@/pages/SivatPage";
+} from "@/lib/sivatData";
 
 interface SivatPdfData {
   patientName: string;
@@ -162,34 +162,32 @@ export function generateSivatPdf(data: SivatPdfData) {
     const pct = Math.round((score / section.maxScore) * 100);
     const sColor = getColor(section.color);
 
-    // Row background
     doc.setFillColor(17, 24, 39);
     doc.roundedRect(margin, y, contentWidth, 12, 2, 2, "F");
 
-    // Color indicator
     doc.setFillColor(sColor[0], sColor[1], sColor[2]);
     doc.roundedRect(margin, y, 2.5, 12, 1, 1, "F");
 
-    // Section letter and title
     doc.setFontSize(8);
     doc.setTextColor(sColor[0], sColor[1], sColor[2]);
     doc.text(`${section.letter}.`, margin + 6, y + 7);
     doc.setTextColor(241, 245, 249);
     doc.text(section.title, margin + 12, y + 7);
 
-    // Score
     doc.setTextColor(sColor[0], sColor[1], sColor[2]);
     doc.text(`${score}/${section.maxScore}`, pageWidth - margin - 25, y + 7, {
       align: "right",
     });
 
-    // Mini bar
     const barX = pageWidth - margin - 22;
     const barW = 20;
     doc.setFillColor(30, 41, 59);
     doc.roundedRect(barX, y + 4, barW, 3, 1, 1, "F");
     doc.setFillColor(sColor[0], sColor[1], sColor[2]);
-    doc.roundedRect(barX, y + 4, (barW * pct) / 100, 3, 1, 1, "F");
+    const filledW = (barW * pct) / 100;
+    if (filledW > 0) {
+      doc.roundedRect(barX, y + 4, filledW, 3, 1, 1, "F");
+    }
 
     y += 14;
   }
@@ -206,7 +204,6 @@ export function generateSivatPdf(data: SivatPdfData) {
     if (score === null) continue;
     const sColor = getColor(section.color);
 
-    // Section header
     doc.setFontSize(7);
     doc.setTextColor(sColor[0], sColor[1], sColor[2]);
     doc.text(`${section.letter}. ${section.title}`, margin, y + 3);
@@ -217,7 +214,6 @@ export function generateSivatPdf(data: SivatPdfData) {
       if (answerValue === null || answerValue === undefined) continue;
       const selectedOption = q.options.find((o) => o.value === answerValue);
 
-      // Check if we need a new page
       if (y > pageHeight - 30) {
         doc.addPage();
         doc.setFillColor(11, 15, 25);

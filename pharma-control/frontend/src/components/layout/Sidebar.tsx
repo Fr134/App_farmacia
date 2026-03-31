@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck, History, LineChart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
@@ -20,6 +20,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin, section: "gestione" },
     { to: "/tools/body-composition", label: "Composizione Corporea", icon: Activity, show: true, section: "strumenti" },
     { to: "/tools/sivat", label: "Aderenza Terapeutica", icon: ClipboardCheck, show: true, section: "strumenti" },
+    { to: "/tools/sivat/history", label: "Storico SIVAT", icon: History, show: true, section: "strumenti" },
+    { to: "/tools/sivat/dashboard", label: "Analytics SIVAT", icon: LineChart, show: !isOperator, section: "strumenti" },
   ];
 
   return (

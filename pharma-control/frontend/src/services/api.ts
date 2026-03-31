@@ -394,3 +394,84 @@ export async function deleteBudgetExpenseLine(
     method: "DELETE",
   });
 }
+
+// ── SIVAT-D Assessments ──
+
+export interface SivatAssessmentData {
+  id: string;
+  userId: string;
+  userName?: string;
+  patientName: string;
+  scoreA: number;
+  scoreB: number;
+  scoreC: number;
+  scoreD: number;
+  scoreE: number | null;
+  sectionEEnabled: boolean;
+  supportLevel: number | null;
+  totalScore: number;
+  rawScore: number;
+  maxPossible: number;
+  classification: string;
+  pdcPercentage: number | null;
+  pdcDaysCovered: number | null;
+  pdcDaysObserved: number | null;
+  answers: Record<string, number | null>;
+  criticalities: string[];
+  interventions: string[];
+  createdAt: string;
+}
+
+export interface SivatDashboardData {
+  totalAssessments: number;
+  averageScore: number;
+  classificationDistribution: Record<string, number>;
+  sectionAverages: { a: number; b: number; c: number; d: number; e: number | null };
+  monthlyTrend: Array<{ month: string; count: number; avgScore: number }>;
+  supportLevelDistribution: Record<number, number>;
+  topCriticalities: Array<{ text: string; count: number }>;
+  topInterventions: Array<{ text: string; count: number }>;
+  sectionEUsageRate: number;
+}
+
+export async function createSivatAssessment(data: Omit<SivatAssessmentData, "id" | "userId" | "userName" | "createdAt">): Promise<{ assessment: SivatAssessmentData }> {
+  return request("/sivat/assessments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getSivatAssessments(params?: {
+  patientName?: string;
+  classification?: string;
+  page?: number;
+}): Promise<{ assessments: SivatAssessmentData[]; total: number }> {
+  const sp = new URLSearchParams();
+  if (params?.patientName) sp.set("patientName", params.patientName);
+  if (params?.classification) sp.set("classification", params.classification);
+  if (params?.page) sp.set("page", String(params.page));
+  return request(`/sivat/assessments?${sp.toString()}`);
+}
+
+export async function getSivatAssessment(id: string): Promise<{ assessment: SivatAssessmentData }> {
+  return request(`/sivat/assessments/${id}`);
+}
+
+export async function deleteSivatAssessment(id: string): Promise<void> {
+  await request(`/sivat/assessments/${id}`, { method: "DELETE" });
+}
+
+export async function getSivatDashboard(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<SivatDashboardData> {
+  const sp = new URLSearchParams();
+  if (params?.dateFrom) sp.set("dateFrom", params.dateFrom);
+  if (params?.dateTo) sp.set("dateTo", params.dateTo);
+  return request(`/sivat/dashboard?${sp.toString()}`);
+}
+
+export async function getSivatPatientHistory(patientName: string): Promise<{ assessments: SivatAssessmentData[] }> {
+  return request(`/sivat/patients/${encodeURIComponent(patientName)}`);
+}

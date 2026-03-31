@@ -11,6 +11,7 @@ import expenseCategoriesRouter from "./routes/expense-categories";
 import expensesRouter from "./routes/expenses";
 import suppliersRouter from "./routes/suppliers";
 import budgetsRouter from "./routes/budgets";
+import sivatRouter from "./routes/sivat";
 import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/expense-categories", expenseCategoriesRouter);
 app.use("/api/expenses", expensesRouter);
 app.use("/api/suppliers", suppliersRouter);
 app.use("/api/budgets", budgetsRouter);
+app.use("/api/sivat", sivatRouter);
 
 // Global error handler
 app.use(errorHandler);

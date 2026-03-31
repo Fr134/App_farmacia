@@ -13,6 +13,8 @@ import BudgetListPage from "@/pages/BudgetListPage";
 import BudgetDetailPage from "@/pages/BudgetDetailPage";
 import BodyCompositionPage from "@/pages/BodyCompositionPage";
 import SivatPage from "@/pages/SivatPage";
+import SivatHistoryPage from "@/pages/SivatHistoryPage";
+import SivatDashboardPage from "@/pages/SivatDashboardPage";
 
 function DefaultRedirect() {
   const { isOperator } = useAuth();
@@ -40,6 +42,8 @@ export default function App() {
             <Route path="/upload" element={<FinancialRoute><UploadPage /></FinancialRoute>} />
             <Route path="/tools/body-composition" element={<BodyCompositionPage />} />
             <Route path="/tools/sivat" element={<SivatPage />} />
+            <Route path="/tools/sivat/history" element={<SivatHistoryPage />} />
+            <Route path="/tools/sivat/dashboard" element={<FinancialRoute><SivatDashboardPage /></FinancialRoute>} />
             <Route
               path="/users"
               element={
