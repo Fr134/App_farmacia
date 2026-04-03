@@ -10,7 +10,7 @@ export default function MainLayout() {
       <Sidebar open={false} onClose={() => {}} />
 
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border-card bg-bg-primary/80 px-4 py-3 backdrop-blur-sm lg:hidden">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border-card bg-bg-sidebar px-4 py-3 backdrop-blur-sm lg:hidden">
         <Pill className="h-5 w-5 text-accent-blue" />
         <span className="text-sm font-semibold text-text-primary">
           PharmaControl

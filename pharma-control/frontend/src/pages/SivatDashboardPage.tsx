@@ -241,7 +241,7 @@ export default function SivatDashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: "#111827", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }}
+                    contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-card)", borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: "#F1F5F9" }}
                   />
                 </PieChart>
@@ -266,12 +266,12 @@ export default function SivatDashboardPage() {
           {trendData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <ComposedChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="month" tick={{ fill: "#94A3B8", fontSize: 11 }} />
-                <YAxis yAxisId="left" tick={{ fill: "#94A3B8", fontSize: 11 }} />
-                <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fill: "#94A3B8", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" />
+                <XAxis dataKey="month" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                <YAxis yAxisId="left" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ background: "#111827", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-card)", borderRadius: 8, fontSize: 12 }}
                 />
                 <Bar yAxisId="left" dataKey="count" name="Valutazioni" fill="#3B82F6" opacity={0.6} radius={[4, 4, 0, 0]} />
                 <Line yAxisId="right" dataKey="avgScore" name="Punteggio medio" stroke="#10B981" strokeWidth={2} dot={{ fill: "#10B981", r: 3 }} />
@@ -287,11 +287,11 @@ export default function SivatDashboardPage() {
       <SectionCard title="Punteggi Medi per Sezione">
         <ResponsiveContainer width="100%" height={sectionData.length * 50 + 20}>
           <BarChart data={sectionData} layout="vertical" margin={{ left: 10, right: 40 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" horizontal={false} />
-            <XAxis type="number" domain={[0, 100]} tick={{ fill: "#94A3B8", fontSize: 11 }} unit="%" />
-            <YAxis type="category" dataKey="section" tick={{ fill: "#94A3B8", fontSize: 12, fontWeight: 600 }} width={30} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" horizontal={false} />
+            <XAxis type="number" domain={[0, 100]} tick={{ fill: "var(--text-muted)", fontSize: 11 }} unit="%" />
+            <YAxis type="category" dataKey="section" tick={{ fill: "var(--text-muted)", fontSize: 12, fontWeight: 600 }} width={30} />
             <Tooltip
-              contentStyle={{ background: "#111827", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }}
+              contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-card)", borderRadius: 8, fontSize: 12 }}
               formatter={(value: number) => [`${value}%`, "Media"]}
             />
             <Bar dataKey="pct" radius={[0, 6, 6, 0]}>
@@ -308,10 +308,10 @@ export default function SivatDashboardPage() {
         <SectionCard title="Distribuzione Supporto Organizzativo">
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={supportData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-              <XAxis dataKey="level" tick={{ fill: "#94A3B8", fontSize: 10 }} />
-              <YAxis tick={{ fill: "#94A3B8", fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "#111827", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" />
+              <XAxis dataKey="level" tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+              <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-card)", borderRadius: 8, fontSize: 12 }} />
               <Bar dataKey="count" name="Valutazioni" fill="#06B6D4" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -410,7 +410,7 @@ export default function SivatDashboardPage() {
                       strokeWidth={2}
                     />
                     <Tooltip
-                      contentStyle={{ background: "#111827", border: "1px solid #1E293B", borderRadius: 8, fontSize: 11 }}
+                      contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border-card)", borderRadius: 8, fontSize: 11 }}
                       formatter={(val: number) => [`${val}/100`, "Punteggio"]}
                       labelFormatter={(_, payload) => {
                         if (payload?.[0]?.payload?.createdAt) {

@@ -1,16 +1,16 @@
 export const COLORS = {
-  bgPrimary: "#0B0F19",
-  bgCard: "#111827",
-  borderCard: "#1E293B",
+  bgPrimary: "var(--bg-primary)",
+  bgCard: "var(--bg-card)",
+  borderCard: "var(--border-card)",
   accentBlue: "#3B82F6",
   accentGreen: "#10B981",
   accentRed: "#EF4444",
   accentAmber: "#F59E0B",
   accentPurple: "#8B5CF6",
   accentCyan: "#06B6D4",
-  textPrimary: "#F1F5F9",
-  textMuted: "#94A3B8",
-  textDim: "#64748B",
+  textPrimary: "var(--text-primary)",
+  textMuted: "var(--text-muted)",
+  textDim: "var(--text-dim)",
 } as const;
 
 export const CHART_COLORS = [

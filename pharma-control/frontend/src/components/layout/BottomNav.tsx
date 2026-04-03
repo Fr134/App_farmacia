@@ -17,7 +17,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border-card bg-[#070A12]/95 backdrop-blur-sm lg:hidden safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border-card bg-bg-sidebar backdrop-blur-sm lg:hidden safe-area-bottom">
       {items
         .filter((item) => item.show)
         .map(({ to, label, icon: Icon }) => {

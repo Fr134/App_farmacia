@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck, History, LineChart } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck, History, LineChart, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SidebarProps {
   open: boolean;
@@ -10,6 +11,7 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { pathname } = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const isOperator = user?.role === "operator";
 
   const navItems = [
@@ -38,7 +40,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 flex h-full w-[240px] flex-col
-          bg-[#070A12] border-r border-border-card
+          bg-bg-sidebar border-r border-border-card
           transition-transform duration-200 ease-in-out
           lg:translate-x-0
           ${open ? "translate-x-0" : "-translate-x-full"}
@@ -107,6 +109,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             });
           })()}
         </nav>
+
+        {/* Theme toggle */}
+        <div className="px-4 pb-2">
+          <button
+            onClick={toggleTheme}
+            className="flex w-full items-center gap-3 rounded-btn px-3 py-2.5 text-sm font-medium text-text-muted hover:bg-white/[0.03] hover:text-text-primary transition-colors"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-[18px] w-[18px]" />
+            ) : (
+              <Moon className="h-[18px] w-[18px]" />
+            )}
+            {theme === "dark" ? "Tema chiaro" : "Tema scuro"}
+          </button>
+        </div>
 
         {/* User info + logout */}
         <div className="border-t border-border-card px-4 py-4">
