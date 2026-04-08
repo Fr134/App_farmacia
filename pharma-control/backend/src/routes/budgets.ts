@@ -13,16 +13,7 @@ router.use(authenticate, authorize("admin", "viewer"));
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const pharmacyId = req.query.pharmacyId as string | undefined;
-
-    if (!pharmacyId) {
-      res.status(400).json({
-        success: false,
-        error: "Parametro 'pharmacyId' obbligatorio",
-      });
-      return;
-    }
-
+    const pharmacyId = req.user!.pharmacyId;
     const budgets = await budgetService.getBudgets(pharmacyId);
     res.json({ success: true, data: { budgets } });
   })
@@ -65,7 +56,6 @@ router.get(
 );
 
 const createBudgetSchema = z.object({
-  pharmacyId: z.string().min(1, "pharmacyId obbligatorio"),
   name: z.string().min(1, "Nome obbligatorio"),
   year: z.number().int().min(2000).max(2100),
   baselineSource: z.enum(["HISTORICAL", "MANUAL"]),
@@ -89,7 +79,10 @@ router.post(
     }
 
     try {
-      const result = await budgetService.createBudget(parsed.data);
+      const result = await budgetService.createBudget({
+        ...parsed.data,
+        pharmacyId: req.user!.pharmacyId,
+      });
       res.status(201).json({ success: true, data: result });
     } catch (err) {
       if (err instanceof ValidationError) {

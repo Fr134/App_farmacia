@@ -83,9 +83,9 @@ function serializeReportWithSectors(
   };
 }
 
-export async function checkDuplicateHash(hash: string): Promise<boolean> {
+export async function checkDuplicateHash(hash: string, pharmacyId: string): Promise<boolean> {
   const existing = await prisma.report.findUnique({
-    where: { file_hash: hash },
+    where: { pharmacy_id_file_hash: { pharmacy_id: pharmacyId, file_hash: hash } },
     select: { id: true },
   });
   return existing !== null;
@@ -93,11 +93,13 @@ export async function checkDuplicateHash(hash: string): Promise<boolean> {
 
 export async function checkDuplicatePeriod(
   month: number,
-  year: number
+  year: number,
+  pharmacyId: string
 ): Promise<boolean> {
   const existing = await prisma.report.findUnique({
     where: {
-      period_month_period_year: {
+      pharmacy_id_period_month_period_year: {
+        pharmacy_id: pharmacyId,
         period_month: month,
         period_year: year,
       },
@@ -109,11 +111,13 @@ export async function checkDuplicatePeriod(
 
 export async function createReport(
   parsed: ParsedReport,
-  fileHash: string
+  fileHash: string,
+  pharmacyId: string
 ): Promise<SerializedReport> {
   const result = await prisma.$transaction(async (tx) => {
     const report = await tx.report.create({
       data: {
+        pharmacy_id: pharmacyId,
         filename: parsed.filename,
         file_hash: fileHash,
         period_month: parsed.period.month,
@@ -169,18 +173,20 @@ export async function createReport(
   return serializeReport(result);
 }
 
-export async function getAll(): Promise<SerializedReport[]> {
+export async function getAll(pharmacyId: string): Promise<SerializedReport[]> {
   const reports = await prisma.report.findMany({
+    where: { pharmacy_id: pharmacyId },
     orderBy: [{ period_year: "desc" }, { period_month: "desc" }],
   });
   return reports.map(serializeReport);
 }
 
 export async function getById(
-  id: string
+  id: string,
+  pharmacyId: string
 ): Promise<ReportWithSectors | null> {
-  const report = await prisma.report.findUnique({
-    where: { id },
+  const report = await prisma.report.findFirst({
+    where: { id, pharmacy_id: pharmacyId },
     include: {
       sectors: { orderBy: { valore: "desc" } },
     },
@@ -189,8 +195,9 @@ export async function getById(
   return serializeReportWithSectors(report);
 }
 
-export async function getLatest(): Promise<ReportWithSectors | null> {
+export async function getLatest(pharmacyId: string): Promise<ReportWithSectors | null> {
   const report = await prisma.report.findFirst({
+    where: { pharmacy_id: pharmacyId },
     orderBy: [{ period_year: "desc" }, { period_month: "desc" }],
     include: {
       sectors: { orderBy: { valore: "desc" } },
@@ -204,11 +211,13 @@ export async function getAggregate(
   fromMonth: number,
   fromYear: number,
   toMonth: number,
-  toYear: number
+  toYear: number,
+  pharmacyId: string
 ): Promise<ReportWithSectors | null> {
   // Fetch all reports in the date range
   const reports = await prisma.report.findMany({
     where: {
+      pharmacy_id: pharmacyId,
       OR: buildDateRangeFilter(fromMonth, fromYear, toMonth, toYear),
     },
     include: {
@@ -391,13 +400,15 @@ function buildDateRangeFilter(
 
 export async function getQuarterlyVat(
   month: number,
-  year: number
+  year: number,
+  pharmacyId: string
 ): Promise<{ ivaDebito: number; monthsInQuarter: number; quarterStart: number; quarterEnd: number }> {
   const quarterStartMonth = Math.floor((month - 1) / 3) * 3 + 1;
   const quarterEnd = quarterStartMonth + 2;
 
   const reports = await prisma.report.findMany({
     where: {
+      pharmacy_id: pharmacyId,
       period_year: year,
       period_month: { gte: quarterStartMonth, lte: month },
     },
@@ -417,8 +428,14 @@ export async function getQuarterlyVat(
   };
 }
 
-export async function deleteById(id: string): Promise<boolean> {
+export async function deleteById(id: string, pharmacyId: string): Promise<boolean> {
   try {
+    // Verify the report belongs to this pharmacy before deleting
+    const report = await prisma.report.findFirst({
+      where: { id, pharmacy_id: pharmacyId },
+      select: { id: true },
+    });
+    if (!report) return false;
     await prisma.report.delete({ where: { id } });
     return true;
   } catch (error) {

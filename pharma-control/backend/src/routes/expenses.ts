@@ -12,16 +12,7 @@ router.use(authenticate, authorize("admin", "viewer"));
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const pharmacyId = req.query.pharmacyId as string | undefined;
-
-    if (!pharmacyId) {
-      res.status(400).json({
-        success: false,
-        error: "Parametro 'pharmacyId' obbligatorio",
-      });
-      return;
-    }
-
+    const pharmacyId = req.user!.pharmacyId;
     const categoryId = req.query.categoryId as string | undefined;
     const recurrenceType = req.query.recurrenceType as string | undefined;
 
@@ -38,23 +29,13 @@ router.get(
 router.get(
   "/summary",
   asyncHandler(async (req, res) => {
-    const pharmacyId = req.query.pharmacyId as string | undefined;
-
-    if (!pharmacyId) {
-      res.status(400).json({
-        success: false,
-        error: "Parametro 'pharmacyId' obbligatorio",
-      });
-      return;
-    }
-
+    const pharmacyId = req.user!.pharmacyId;
     const summary = await expenseService.getExpenseSummary(pharmacyId);
     res.json({ success: true, data: summary });
   })
 );
 
 const createExpenseSchema = z.object({
-  pharmacyId: z.string().min(1, "pharmacyId obbligatorio"),
   name: z.string().min(1, "Nome obbligatorio"),
   description: z.string().optional(),
   categoryId: z.string().min(1, "Categoria obbligatoria"),
@@ -83,7 +64,10 @@ router.post(
       return;
     }
 
-    const expense = await expenseService.createExpense(parsed.data);
+    const expense = await expenseService.createExpense({
+      ...parsed.data,
+      pharmacyId: req.user!.pharmacyId,
+    });
     res.status(201).json({ success: true, data: { expense } });
   })
 );

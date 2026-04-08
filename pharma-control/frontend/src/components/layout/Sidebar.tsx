@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck, History, LineChart, Sun, Moon } from "lucide-react";
+import { Pill, LayoutDashboard, Upload, Receipt, Users, LogOut, X, BarChart3, Wrench, Activity, ClipboardCheck, History, LineChart, Sun, Moon, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -20,6 +20,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { to: "/budget", label: "Budget", icon: BarChart3, show: !isOperator, section: "gestione" },
     { to: "/upload", label: "Carica Report", icon: Upload, show: !isOperator, section: "gestione" },
     { to: "/users", label: "Utenti", icon: Users, show: isAdmin, section: "gestione" },
+    { to: "/pharmacies", label: "Farmacie", icon: Building2, show: isAdmin, section: "gestione" },
     { to: "/tools/body-composition", label: "Composizione Corporea", icon: Activity, show: true, section: "strumenti" },
     { to: "/tools/sivat", label: "Aderenza Terapeutica", icon: ClipboardCheck, show: true, section: "strumenti" },
     { to: "/tools/sivat/history", label: "Storico SIVAT", icon: History, show: true, section: "strumenti" },
@@ -54,8 +55,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <h1 className="text-[15px] font-bold text-text-primary">
                 PharmaControl
               </h1>
-              <p className="text-[10px] text-text-dim">
-                Controllo di Gestione
+              <p className="text-[10px] text-text-dim truncate max-w-[140px]">
+                {user?.pharmacyName ?? "Controllo di Gestione"}
               </p>
             </div>
           </div>

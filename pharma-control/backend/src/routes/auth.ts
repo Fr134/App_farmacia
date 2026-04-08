@@ -27,7 +27,10 @@ router.post(
 
     const { email, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { pharmacy: { select: { id: true, name: true } } },
+    });
     if (!user) {
       res.status(401).json({
         success: false,
@@ -69,6 +72,8 @@ router.post(
           email: user.email,
           name: user.name,
           role: user.role,
+          pharmacyId: user.pharmacy_id,
+          pharmacyName: user.pharmacy.name,
         },
       },
     });
@@ -88,7 +93,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
-      select: { id: true, email: true, name: true, role: true },
+      select: { id: true, email: true, name: true, role: true, pharmacy_id: true, pharmacy: { select: { name: true } } },
     });
 
     if (!user) {
@@ -96,7 +101,17 @@ router.get(
       return;
     }
 
-    res.json({ success: true, data: user });
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        pharmacyId: user.pharmacy_id,
+        pharmacyName: user.pharmacy.name,
+      },
+    });
   })
 );
 

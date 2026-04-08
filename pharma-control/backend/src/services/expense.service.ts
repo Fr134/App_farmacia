@@ -88,8 +88,9 @@ function normalizeToMonthly(amountNet: number, recurrenceType: string): number {
 
 // ─── Categories ───────────────────────────────────────
 
-export async function getAllCategories(): Promise<ExpenseCategory[]> {
+export async function getAllCategories(pharmacyId: string): Promise<ExpenseCategory[]> {
   const categories = await prisma.expenseCategory.findMany({
+    where: { pharmacy_id: pharmacyId },
     orderBy: { name: "asc" },
   });
   return categories.map(serializeCategory);

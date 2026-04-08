@@ -8,11 +8,12 @@ export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
+  pharmacyId: string;
 }
 
-export function generateToken(user: { id: string; email: string; role: string }): string {
+export function generateToken(user: { id: string; email: string; role: string; pharmacy_id: string }): string {
   return jwt.sign(
-    { userId: user.id, email: user.email, role: user.role } satisfies TokenPayload,
+    { userId: user.id, email: user.email, role: user.role, pharmacyId: user.pharmacy_id } satisfies TokenPayload,
     JWT_SECRET,
     { expiresIn: TOKEN_EXPIRY }
   );

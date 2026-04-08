@@ -92,7 +92,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 // Auth
 export interface LoginResponse {
   token: string;
-  user: { id: string; email: string; name: string; role: string };
+  user: { id: string; email: string; name: string; role: string; pharmacyId: string; pharmacyName: string };
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
@@ -114,7 +114,7 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getMe(): Promise<{ id: string; email: string; name: string; role: string }> {
+export async function getMe(): Promise<{ id: string; email: string; name: string; role: string; pharmacyId: string; pharmacyName: string }> {
   return request("/auth/me");
 }
 
@@ -211,9 +211,6 @@ export async function deleteUser(id: string): Promise<void> {
   await request(`/users/${id}`, { method: "DELETE" });
 }
 
-// Pharmacy ID — single-pharmacy setup
-const PHARMACY_ID = "default";
-
 // Expense Categories
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   const data = await request<{ categories: ExpenseCategory[] }>("/expense-categories");
@@ -225,14 +222,14 @@ export async function getExpenses(filters?: {
   categoryId?: string;
   recurrenceType?: string;
 }): Promise<{ expenses: Expense[]; totalMonthlyNet: number; totalMonthlyGross: number }> {
-  const params = new URLSearchParams({ pharmacyId: PHARMACY_ID });
+  const params = new URLSearchParams();
   if (filters?.categoryId) params.set("categoryId", filters.categoryId);
   if (filters?.recurrenceType) params.set("recurrenceType", filters.recurrenceType);
   return request(`/expenses?${params.toString()}`);
 }
 
 export async function getExpenseSummary(): Promise<ExpenseSummary> {
-  return request(`/expenses/summary?pharmacyId=${PHARMACY_ID}`);
+  return request("/expenses/summary");
 }
 
 export async function createExpense(data: {
@@ -252,7 +249,7 @@ export async function createExpense(data: {
   return request("/expenses", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+    body: JSON.stringify(data),
   });
 }
 
@@ -273,9 +270,7 @@ export async function deleteExpense(id: string): Promise<void> {
 
 // Suppliers
 export async function getSuppliers(): Promise<Supplier[]> {
-  const data = await request<{ suppliers: Supplier[] }>(
-    `/suppliers?pharmacyId=${PHARMACY_ID}`
-  );
+  const data = await request<{ suppliers: Supplier[] }>("/suppliers");
   return data.suppliers;
 }
 
@@ -290,13 +285,13 @@ export async function createSupplier(data: {
   return request("/suppliers", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+    body: JSON.stringify(data),
   });
 }
 
 // Budgets
 export async function getBudgets(): Promise<{ budgets: BudgetWithSummary[] }> {
-  return request(`/budgets?pharmacyId=${PHARMACY_ID}`);
+  return request("/budgets");
 }
 
 export async function getBudget(id: string): Promise<{ budget: Budget; summary: BudgetSummary }> {
@@ -318,7 +313,7 @@ export async function createBudget(data: {
   return request("/budgets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...data, pharmacyId: PHARMACY_ID }),
+    body: JSON.stringify(data),
   });
 }
 
@@ -474,4 +469,51 @@ export async function getSivatDashboard(params?: {
 
 export async function getSivatPatientHistory(patientName: string): Promise<{ assessments: SivatAssessmentData[] }> {
   return request(`/sivat/patients/${encodeURIComponent(patientName)}`);
+}
+
+// ── Pharmacies ──
+
+export interface PharmacyData {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  createdAt: string;
+  userCount?: number;
+}
+
+export async function getPharmacies(): Promise<{ pharmacies: PharmacyData[] }> {
+  return request("/pharmacies");
+}
+
+export async function createPharmacy(data: {
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+}): Promise<{ pharmacy: PharmacyData }> {
+  return request("/pharmacies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePharmacy(
+  id: string,
+  data: { name?: string; address?: string; phone?: string; email?: string }
+): Promise<{ pharmacy: PharmacyData }> {
+  return request(`/pharmacies/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePharmacy(id: string): Promise<void> {
+  await request(`/pharmacies/${id}`, { method: "DELETE" });
 }

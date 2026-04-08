@@ -12,6 +12,7 @@ import expensesRouter from "./routes/expenses";
 import suppliersRouter from "./routes/suppliers";
 import budgetsRouter from "./routes/budgets";
 import sivatRouter from "./routes/sivat";
+import pharmaciesRouter from "./routes/pharmacies";
 import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/expenses", expensesRouter);
 app.use("/api/suppliers", suppliersRouter);
 app.use("/api/budgets", budgetsRouter);
 app.use("/api/sivat", sivatRouter);
+app.use("/api/pharmacies", pharmaciesRouter);
 
 // Global error handler
 app.use(errorHandler);

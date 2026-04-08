@@ -39,8 +39,10 @@ function serializeUser(user: { id: string; email: string; name: string; role: st
 // GET /api/users
 router.get(
   "/",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const pharmacyId = req.user!.pharmacyId;
     const users = await prisma.user.findMany({
+      where: { pharmacy_id: pharmacyId },
       orderBy: { created_at: "desc" },
       select: {
         id: true,
@@ -83,7 +85,7 @@ router.post(
 
     const hashed = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { email, password: hashed, name, role },
+      data: { email, password: hashed, name, role, pharmacy_id: req.user!.pharmacyId },
       select: {
         id: true,
         email: true,
@@ -108,6 +110,15 @@ router.patch(
         success: false,
         error: parsed.error.errors[0].message,
       });
+      return;
+    }
+
+    // Verify target user belongs to the same pharmacy
+    const targetUser = await prisma.user.findFirst({
+      where: { id: req.params.id, pharmacy_id: req.user!.pharmacyId },
+    });
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: "Utente non trovato" });
       return;
     }
 
@@ -151,6 +162,15 @@ router.delete(
         success: false,
         error: "Non puoi eliminare il tuo account",
       });
+      return;
+    }
+
+    // Verify target user belongs to the same pharmacy
+    const targetUser = await prisma.user.findFirst({
+      where: { id: req.params.id, pharmacy_id: req.user!.pharmacyId },
+    });
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: "Utente non trovato" });
       return;
     }
 

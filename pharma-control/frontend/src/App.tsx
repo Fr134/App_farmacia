@@ -15,6 +15,7 @@ import BodyCompositionPage from "@/pages/BodyCompositionPage";
 import SivatPage from "@/pages/SivatPage";
 import SivatHistoryPage from "@/pages/SivatHistoryPage";
 import SivatDashboardPage from "@/pages/SivatDashboardPage";
+import PharmaciesPage from "@/pages/PharmaciesPage";
 
 function DefaultRedirect() {
   const { isOperator } = useAuth();
@@ -49,6 +50,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <UsersPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/pharmacies"
+              element={
+                <AdminRoute>
+                  <PharmaciesPage />
                 </AdminRoute>
               }
             />

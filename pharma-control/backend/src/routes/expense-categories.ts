@@ -10,8 +10,9 @@ router.use(authenticate, authorize("admin", "viewer"));
 // GET /api/expense-categories
 router.get(
   "/",
-  asyncHandler(async (_req, res) => {
-    const categories = await expenseService.getAllCategories();
+  asyncHandler(async (req, res) => {
+    const pharmacyId = req.user!.pharmacyId;
+    const categories = await expenseService.getAllCategories(pharmacyId);
     res.json({ success: true, data: { categories } });
   })
 );

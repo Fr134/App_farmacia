@@ -62,8 +62,10 @@ router.post(
     // 2. Compute SHA-256 hash
     const fileHash = createHash("sha256").update(file.buffer).digest("hex");
 
+    const pharmacyId = req.user!.pharmacyId;
+
     // 3. Check duplicate hash
-    if (await reportService.checkDuplicateHash(fileHash)) {
+    if (await reportService.checkDuplicateHash(fileHash, pharmacyId)) {
       res.status(409).json({
         success: false,
         error: "Questo file è già stato caricato",
@@ -89,7 +91,8 @@ router.post(
     if (
       await reportService.checkDuplicatePeriod(
         parsed.period.month,
-        parsed.period.year
+        parsed.period.year,
+        pharmacyId
       )
     ) {
       res.status(409).json({
@@ -112,7 +115,7 @@ router.post(
     }
 
     // 7. Save to database
-    const report = await reportService.createReport(parsed, fileHash);
+    const report = await reportService.createReport(parsed, fileHash, pharmacyId);
 
     res.status(201).json({
       success: true,

@@ -12,23 +12,13 @@ router.use(authenticate, authorize("admin", "viewer"));
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const pharmacyId = req.query.pharmacyId as string | undefined;
-
-    if (!pharmacyId) {
-      res.status(400).json({
-        success: false,
-        error: "Parametro 'pharmacyId' obbligatorio",
-      });
-      return;
-    }
-
+    const pharmacyId = req.user!.pharmacyId;
     const suppliers = await expenseService.getSuppliers(pharmacyId);
     res.json({ success: true, data: { suppliers } });
   })
 );
 
 const createSupplierSchema = z.object({
-  pharmacyId: z.string().min(1, "pharmacyId obbligatorio"),
   ragioneSociale: z.string().min(1, "Ragione sociale obbligatoria"),
   piva: z.string().optional(),
   codiceFiscale: z.string().optional(),
@@ -51,7 +41,10 @@ router.post(
       return;
     }
 
-    const supplier = await expenseService.createSupplier(parsed.data);
+    const supplier = await expenseService.createSupplier({
+      ...parsed.data,
+      pharmacyId: req.user!.pharmacyId,
+    });
     res.status(201).json({ success: true, data: { supplier } });
   })
 );

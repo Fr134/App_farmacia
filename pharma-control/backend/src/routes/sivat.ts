@@ -43,7 +43,7 @@ router.post(
       return;
     }
 
-    const assessment = await sivatService.createAssessment(parsed.data, req.user!.userId);
+    const assessment = await sivatService.createAssessment(parsed.data, req.user!.userId, req.user!.pharmacyId);
     res.status(201).json({ success: true, data: { assessment } });
   })
 );
@@ -55,6 +55,7 @@ router.get(
     const isOperator = req.user!.role === "operator";
 
     const filters: sivatService.ListFilters = {
+      pharmacyId: req.user!.pharmacyId,
       patientName: req.query.patientName as string | undefined,
       classification: req.query.classification as string | undefined,
       page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
@@ -78,7 +79,7 @@ router.get(
 router.get(
   "/assessments/:id",
   asyncHandler(async (req, res) => {
-    const assessment = await sivatService.getAssessment(req.params.id);
+    const assessment = await sivatService.getAssessment(req.params.id, req.user!.pharmacyId);
     if (!assessment) {
       res.status(404).json({ success: false, error: "Valutazione non trovata" });
       return;
@@ -92,7 +93,7 @@ router.delete(
   "/assessments/:id",
   authorize("admin"),
   asyncHandler(async (req, res) => {
-    await sivatService.deleteAssessment(req.params.id);
+    await sivatService.deleteAssessment(req.params.id, req.user!.pharmacyId);
     res.json({ success: true, data: null });
   })
 );
@@ -105,7 +106,7 @@ router.get(
     const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
     const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
 
-    const stats = await sivatService.getDashboardStats(dateFrom, dateTo);
+    const stats = await sivatService.getDashboardStats(req.user!.pharmacyId, dateFrom, dateTo);
     res.json({ success: true, data: stats });
   })
 );
@@ -115,7 +116,8 @@ router.get(
   "/patients/:name",
   asyncHandler(async (req, res) => {
     const assessments = await sivatService.getPatientHistory(
-      decodeURIComponent(req.params.name)
+      decodeURIComponent(req.params.name),
+      req.user!.pharmacyId
     );
     res.json({ success: true, data: { assessments } });
   })

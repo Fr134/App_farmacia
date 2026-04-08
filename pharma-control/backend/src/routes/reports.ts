@@ -12,8 +12,8 @@ router.use(authenticate, authorize("admin", "viewer"));
 // GET /api/reports — list all reports
 router.get(
   "/",
-  asyncHandler(async (_req, res) => {
-    const reports = await reportService.getAll();
+  asyncHandler(async (req, res) => {
+    const reports = await reportService.getAll(req.user!.pharmacyId);
     res.json({ success: true, data: reports });
   })
 );
@@ -65,7 +65,7 @@ router.get(
       return;
     }
 
-    const result = await reportService.getAggregate(fromMonth, fromYear, toMonth, toYear);
+    const result = await reportService.getAggregate(fromMonth, fromYear, toMonth, toYear, req.user!.pharmacyId);
 
     if (!result) {
       res.status(404).json({
@@ -113,7 +113,7 @@ router.get(
       return;
     }
 
-    const data = await reportService.getQuarterlyVat(month, year);
+    const data = await reportService.getQuarterlyVat(month, year, req.user!.pharmacyId);
     res.json({ success: true, data });
   })
 );
@@ -121,8 +121,8 @@ router.get(
 // GET /api/reports/latest — get the most recent report
 router.get(
   "/latest",
-  asyncHandler(async (_req, res) => {
-    const report = await reportService.getLatest();
+  asyncHandler(async (req, res) => {
+    const report = await reportService.getLatest(req.user!.pharmacyId);
 
     if (!report) {
       res.status(404).json({
@@ -140,7 +140,8 @@ router.get(
 router.get(
   "/:id/alerts",
   asyncHandler(async (req, res) => {
-    const report = await reportService.getById(req.params.id);
+    const pharmacyId = req.user!.pharmacyId;
+    const report = await reportService.getById(req.params.id, pharmacyId);
 
     if (!report) {
       res.status(404).json({
@@ -154,7 +155,7 @@ router.get(
     let comparison = null;
 
     if (compareTo) {
-      comparison = await reportService.getById(compareTo);
+      comparison = await reportService.getById(compareTo, pharmacyId);
     }
 
     const result = generateAlerts(report, comparison);
@@ -166,7 +167,7 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const report = await reportService.getById(req.params.id);
+    const report = await reportService.getById(req.params.id, req.user!.pharmacyId);
 
     if (!report) {
       res.status(404).json({
@@ -185,7 +186,7 @@ router.delete(
   "/:id",
   authorize("admin"),
   asyncHandler(async (req, res) => {
-    const deleted = await reportService.deleteById(req.params.id);
+    const deleted = await reportService.deleteById(req.params.id, req.user!.pharmacyId);
 
     if (!deleted) {
       res.status(404).json({

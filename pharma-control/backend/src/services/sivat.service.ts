@@ -26,6 +26,7 @@ export interface CreateSivatInput {
 
 export interface ListFilters {
   userId?: string;
+  pharmacyId?: string;
   patientName?: string;
   classification?: string;
   dateFrom?: Date;
@@ -67,10 +68,11 @@ function serialize(assessment: Record<string, unknown>) {
 
 // ── CRUD ──
 
-export async function createAssessment(data: CreateSivatInput, userId: string) {
+export async function createAssessment(data: CreateSivatInput, userId: string, pharmacyId: string) {
   const assessment = await prisma.sivatAssessment.create({
     data: {
       user_id: userId,
+      pharmacy_id: pharmacyId,
       patient_name: data.patientName.trim(),
       score_a: data.scoreA,
       score_b: data.scoreB,
@@ -95,9 +97,9 @@ export async function createAssessment(data: CreateSivatInput, userId: string) {
   return serialize(assessment as unknown as Record<string, unknown>);
 }
 
-export async function getAssessment(id: string) {
-  const assessment = await prisma.sivatAssessment.findUnique({
-    where: { id },
+export async function getAssessment(id: string, pharmacyId: string) {
+  const assessment = await prisma.sivatAssessment.findFirst({
+    where: { id, pharmacy_id: pharmacyId },
     include: { user: { select: { name: true } } },
   });
   if (!assessment) return null;
@@ -109,6 +111,7 @@ export async function listAssessments(filters: ListFilters) {
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? 50;
 
+  if (filters.pharmacyId) where.pharmacy_id = filters.pharmacyId;
   if (filters.userId) where.user_id = filters.userId;
   if (filters.classification) where.classification = filters.classification;
   if (filters.patientName) {
@@ -137,13 +140,19 @@ export async function listAssessments(filters: ListFilters) {
   };
 }
 
-export async function deleteAssessment(id: string) {
+export async function deleteAssessment(id: string, pharmacyId: string) {
+  const assessment = await prisma.sivatAssessment.findFirst({
+    where: { id, pharmacy_id: pharmacyId },
+  });
+  if (!assessment) {
+    throw new Error("Valutazione non trovata");
+  }
   return prisma.sivatAssessment.delete({ where: { id } });
 }
 
-export async function getPatientHistory(patientName: string) {
+export async function getPatientHistory(patientName: string, pharmacyId: string) {
   const assessments = await prisma.sivatAssessment.findMany({
-    where: { patient_name: { equals: patientName, mode: "insensitive" } },
+    where: { patient_name: { equals: patientName, mode: "insensitive" }, pharmacy_id: pharmacyId },
     include: { user: { select: { name: true } } },
     orderBy: { created_at: "desc" },
   });
@@ -152,8 +161,8 @@ export async function getPatientHistory(patientName: string) {
 
 // ── Dashboard Stats ──
 
-export async function getDashboardStats(dateFrom?: Date, dateTo?: Date) {
-  const where: Prisma.SivatAssessmentWhereInput = {};
+export async function getDashboardStats(pharmacyId: string, dateFrom?: Date, dateTo?: Date) {
+  const where: Prisma.SivatAssessmentWhereInput = { pharmacy_id: pharmacyId };
   if (dateFrom || dateTo) {
     where.created_at = {};
     if (dateFrom) where.created_at.gte = dateFrom;
@@ -194,6 +203,7 @@ export async function getDashboardStats(dateFrom?: Date, dateTo?: Date) {
           COUNT(*)::int as count,
           ROUND(AVG(total_score), 1)::float as avg_score
         FROM "SivatAssessment"
+        WHERE pharmacy_id = ${pharmacyId}
         GROUP BY date_trunc('month', created_at)
         ORDER BY month ASC
       ` as Promise<Array<{ month: string; count: number; avg_score: number }>>,
@@ -229,6 +239,7 @@ export async function getDashboardStats(dateFrom?: Date, dateTo?: Date) {
     topCriticalities = await prisma.$queryRaw<Array<{ text: string; count: number }>>`
       SELECT elem::text as text, COUNT(*)::int as count
       FROM "SivatAssessment", jsonb_array_elements_text(criticalities) as elem
+      WHERE pharmacy_id = ${pharmacyId}
       GROUP BY elem
       ORDER BY count DESC
       LIMIT 10
@@ -236,6 +247,7 @@ export async function getDashboardStats(dateFrom?: Date, dateTo?: Date) {
     topInterventions = await prisma.$queryRaw<Array<{ text: string; count: number }>>`
       SELECT elem::text as text, COUNT(*)::int as count
       FROM "SivatAssessment", jsonb_array_elements_text(interventions) as elem
+      WHERE pharmacy_id = ${pharmacyId}
       GROUP BY elem
       ORDER BY count DESC
       LIMIT 10
