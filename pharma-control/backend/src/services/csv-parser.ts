@@ -76,18 +76,18 @@ function extractPeriod(filename: string): ParsedPeriod {
   const lower = filename.toLowerCase();
 
   for (const [mese, monthNum] of Object.entries(MESI_ITALIANI)) {
-    const regex = new RegExp(`[_ ]${mese}[_ ](\\d{2})(?:\\.csv)?$`);
+    const regex = new RegExp(`[_ ]${mese}[_ ](\\d{2,4})(?:\\.csv)?$`);
     const match = lower.match(regex);
     if (match) {
-      const shortYear = parseInt(match[1], 10);
-      const year = shortYear < 100 ? 2000 + shortYear : shortYear;
+      const rawYear = parseInt(match[1], 10);
+      const year = rawYear < 100 ? 2000 + rawYear : rawYear;
       return { month: monthNum, year };
     }
   }
 
   throw new Error(
     `Impossibile estrarre il periodo dal nome file "${filename}". ` +
-      "Formato atteso: export mese AA.csv (es: export gennaio 26.csv)"
+      "Formato atteso: export mese AAAA.csv (es: export gennaio 2026.csv)"
   );
 }
 
