@@ -100,8 +100,11 @@ export default function SivatHistoryPage() {
   };
 
   const handleDownloadPdf = (a: SivatAssessmentData) => {
+    // Extract extra data from answers JSON if present (new format stores them there)
+    const raw = a.answers as Record<string, unknown>;
     generateSivatPdf({
       patientName: a.patientName,
+      patientAge: raw._patientAge ? String(raw._patientAge) : "",
       answers: a.answers,
       sectionScores: {
         a: a.scoreA,
@@ -115,6 +118,9 @@ export default function SivatHistoryPage() {
       totalScore: a.totalScore,
       criticalities: a.criticalities,
       interventions: a.interventions,
+      preliminaryAnswers: (raw._preliminary as Record<string, string>) ?? {},
+      drugAnswers: (raw._drugAnswers as Record<string, string>) ?? {},
+      drugSectionEnabled: (raw._drugSectionsEnabled as Record<string, boolean>) ?? {},
       pdcPercentage: a.pdcPercentage,
     });
   };

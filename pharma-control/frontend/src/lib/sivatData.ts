@@ -25,12 +25,99 @@ export interface SivatSectionDef {
 
 export type Answers = Record<string, number | null>;
 
+// ── Preliminary Questions (no score, contextual data) ──
+
+export interface PreliminaryQuestion {
+  id: string;
+  text: string;
+  type: "yesno" | "choice" | "text";
+  options?: string[];
+  conditionalOn?: { questionId: string; value: string };
+  followUpText?: string;
+}
+
+export const PRELIMINARY_QUESTIONS: PreliminaryQuestion[] = [
+  {
+    id: "pre1",
+    text: "Ha il medico di medicina generale?",
+    type: "yesno",
+  },
+  {
+    id: "pre2",
+    text: "Ha difficoltà a mettersi in contatto con il medico?",
+    type: "yesno",
+    conditionalOn: { questionId: "pre1", value: "no" },
+    followUpText: "A chi si rivolge per le prescrizioni dei farmaci?",
+  },
+  {
+    id: "pre3",
+    text: "Negli ultimi tre mesi ha sospeso/ridotto per più di un giorno uno o più farmaci?",
+    type: "choice",
+    options: ["No", "Sospeso", "Ridotto"],
+  },
+  {
+    id: "pre3_motivo",
+    text: "Per quale motivo?",
+    type: "choice",
+    options: ["Mi sentivo bene", "Volevo evitare effetti collaterali", "Mi è stato consigliato"],
+    conditionalOn: { questionId: "pre3", value: "Sospeso" },
+  },
+  {
+    id: "pre3_motivo_ridotto",
+    text: "Per quale motivo?",
+    type: "choice",
+    options: ["Mi sentivo bene", "Volevo evitare effetti collaterali", "Mi è stato consigliato"],
+    conditionalOn: { questionId: "pre3", value: "Ridotto" },
+  },
+];
+
+// ── Drug-Specific Questions (no score, statistical data) ──
+
+export interface DrugSpecificSection {
+  id: string;
+  title: string;
+  questions: { id: string; text: string; type: "text" | "yesno" }[];
+}
+
+export const DRUG_SPECIFIC_SECTIONS: DrugSpecificSection[] = [
+  {
+    id: "drug_ipp",
+    title: "Terapia con IPP (Inibitori Pompa Protonica)",
+    questions: [
+      { id: "ipp_farmaco", text: "Quale farmaco assume?", type: "text" },
+      { id: "ipp_prescrittore", text: "Chi le ha prescritto la terapia?", type: "text" },
+      { id: "ipp_durata", text: "Da quanto tempo lo prende?", type: "text" },
+      { id: "ipp_rivalutazione", text: "Ha mai fatto la rivalutazione?", type: "yesno" },
+    ],
+  },
+  {
+    id: "drug_benzo",
+    title: "Terapia con Benzodiazepine",
+    questions: [
+      { id: "benzo_prescrittore", text: "Chi le ha prescritto il farmaco/farmaci che assume?", type: "text" },
+      { id: "benzo_durata", text: "Da quanto tempo assume questa terapia?", type: "text" },
+      { id: "benzo_ricetta", text: "Ha sempre la ricetta?", type: "yesno" },
+      { id: "benzo_sospeso", text: "Ha mai sospeso spontaneamente?", type: "yesno" },
+      { id: "benzo_motivo_sospensione", text: "Se ha sospeso, per quale motivo?", type: "text" },
+      { id: "benzo_rivalutazione", text: "Ha mai fatto una rivalutazione?", type: "yesno" },
+    ],
+  },
+  {
+    id: "drug_glp1",
+    title: "Paziente in trattamento con agonisti GLP-1",
+    questions: [
+      { id: "glp1_nausea", text: "Ha avvertito nausea/vomito?", type: "yesno" },
+      { id: "glp1_integratori", text: "Ha assunto farmaci o integratori?", type: "yesno" },
+    ],
+  },
+];
+
 // ── Section Definitions ──
 
 export const SECTION_A: SivatSectionDef = {
   id: "a",
   letter: "A",
-  title: "Aderenza Comportamentale Dichiarata",
+  title: "Aderenza Comportamentale Rilevata",
   subtitle: "Ciò che il paziente riferisce · max 20 punti",
   maxScore: 20,
   color: "accent-blue",
@@ -81,13 +168,13 @@ export const SECTION_A: SivatSectionDef = {
     },
     {
       id: "a5",
-      text: "Quanto si sente costante nel seguire la terapia ogni giorno?",
+      text: "Assume la terapia ogni giorno?",
       options: [
-        { label: "Molto costante", value: 4 },
-        { label: "Abbastanza", value: 3 },
-        { label: "Discontinuo", value: 2 },
-        { label: "Poco costante", value: 1 },
-        { label: "Per niente", value: 0 },
+        { label: "Sì, sempre", value: 4 },
+        { label: "Quasi sempre", value: 3 },
+        { label: "Spesso dimentico", value: 2 },
+        { label: "Solo quando mi ricordo", value: 1 },
+        { label: "No / molto irregolarmente", value: 0 },
       ],
     },
   ],
@@ -145,10 +232,10 @@ export const SECTION_C: SivatSectionDef = {
     },
     {
       id: "c3",
-      text: "Complessità degli orari",
+      text: "Schema terapeutico",
       options: [
-        { label: "Semplici / allineati ai pasti", value: 3 },
-        { label: "Orari misti", value: 2 },
+        { label: "Semplice / allineato ai pasti", value: 3 },
+        { label: "Schema misto", value: 2 },
         { label: "Schema complesso", value: 0 },
       ],
     },
@@ -177,8 +264,8 @@ export const SECTION_D: SivatSectionDef = {
   id: "d",
   letter: "D",
   title: "Capacità di Gestione e Comprensione",
-  subtitle: "Autoefficacia e comprensione · max 15 punti",
-  maxScore: 15,
+  subtitle: "Autoefficacia e comprensione · max 12 punti",
+  maxScore: 12,
   color: "accent-purple",
   questions: [
     {
@@ -212,22 +299,12 @@ export const SECTION_D: SivatSectionDef = {
     },
     {
       id: "d4",
-      text: "Si sente sicuro nel gestire da solo la terapia?",
+      text: "Ha difficoltà ad assumere i farmaci per via della formulazione (compresse troppo grandi/piccole)?",
       options: [
-        { label: "Molto", value: 3 },
-        { label: "Abbastanza", value: 2 },
-        { label: "Poco", value: 1 },
-        { label: "Per niente", value: 0 },
-      ],
-    },
-    {
-      id: "d5",
-      text: "Ha difficoltà visive, manuali o cognitive che interferiscono?",
-      options: [
-        { label: "No", value: 3 },
-        { label: "Lievi", value: 2 },
-        { label: "Moderate", value: 1 },
-        { label: "Importanti", value: 0 },
+        { label: "Nessuna difficoltà", value: 3 },
+        { label: "Lievi difficoltà", value: 2 },
+        { label: "Difficoltà significative", value: 1 },
+        { label: "Non riesce ad assumerli", value: 0 },
       ],
     },
   ],

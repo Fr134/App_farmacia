@@ -2,12 +2,15 @@ import jsPDF from "jspdf";
 import {
   ALL_SECTIONS,
   SUPPORT_OPTIONS,
+  PRELIMINARY_QUESTIONS,
+  DRUG_SPECIFIC_SECTIONS,
   getScoreClass,
   type Answers,
 } from "@/lib/sivatData";
 
 interface SivatPdfData {
   patientName: string;
+  patientAge: string;
   answers: Answers;
   sectionScores: Record<string, number | null>;
   sectionEEnabled: boolean;
@@ -16,6 +19,9 @@ interface SivatPdfData {
   criticalities: string[];
   interventions: string[];
   pdcPercentage: number | null;
+  preliminaryAnswers: Record<string, string>;
+  drugAnswers: Record<string, string>;
+  drugSectionEnabled: Record<string, boolean>;
 }
 
 const SECTION_COLORS: Record<string, [number, number, number]> = {
@@ -80,7 +86,7 @@ export function generateSivatPdf(data: SivatPdfData) {
   doc.setLineWidth(0.3);
   doc.line(margin, y, pageWidth - margin, y);
 
-  // ── Patient Name ──
+  // ── Patient Name + Age ──
   y += 8;
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
@@ -88,7 +94,10 @@ export function generateSivatPdf(data: SivatPdfData) {
   doc.setFontSize(14);
   doc.setTextColor(241, 245, 249);
   y += 6;
-  doc.text(data.patientName || "—", margin, y);
+  const patientLabel = data.patientAge
+    ? `${data.patientName || "—"} — ${data.patientAge} anni`
+    : data.patientName || "—";
+  doc.text(patientLabel, margin, y);
 
   // ── Score Box ──
   y += 10;
@@ -313,6 +322,102 @@ export function generateSivatPdf(data: SivatPdfData) {
       doc.setTextColor(16, 185, 129);
       doc.text(interv, margin + 6, y + 3);
       y += 5;
+    }
+  }
+
+  // ── Preliminary Answers ──
+  const hasPreliminary = Object.values(data.preliminaryAnswers).some((v) => v);
+  if (hasPreliminary) {
+    if (y > pageHeight - 40) {
+      doc.addPage();
+      doc.setFillColor(11, 15, 25);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageWidth, 4, "F");
+      y = 14;
+    }
+
+    y += 3;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("CONTESTO GENERALE", margin, y);
+    y += 5;
+
+    for (const pq of PRELIMINARY_QUESTIONS) {
+      const answer = data.preliminaryAnswers[pq.id];
+      if (!answer) continue;
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(pq.text, margin + 3, y + 3);
+      doc.setTextColor(241, 245, 249);
+      doc.text(answer, pageWidth - margin, y + 3, { align: "right" });
+      y += 4.5;
+
+      // Follow-up answers
+      const followUp = data.preliminaryAnswers[`${pq.id}_followup`];
+      if (followUp) {
+        doc.setTextColor(148, 163, 184);
+        doc.text(pq.followUpText ?? "", margin + 6, y + 3);
+        doc.setTextColor(241, 245, 249);
+        doc.text(followUp, pageWidth - margin, y + 3, { align: "right" });
+        y += 4.5;
+      }
+      const daChi = data.preliminaryAnswers[`${pq.id}_dachi`];
+      if (daChi) {
+        doc.setTextColor(148, 163, 184);
+        doc.text("Da chi:", margin + 6, y + 3);
+        doc.setTextColor(241, 245, 249);
+        doc.text(daChi, pageWidth - margin, y + 3, { align: "right" });
+        y += 4.5;
+      }
+    }
+  }
+
+  // ── Drug-Specific Data ──
+  const activeDrugSections = DRUG_SPECIFIC_SECTIONS.filter((ds) => data.drugSectionEnabled[ds.id]);
+  if (activeDrugSections.length > 0) {
+    if (y > pageHeight - 40) {
+      doc.addPage();
+      doc.setFillColor(11, 15, 25);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageWidth, 4, "F");
+      y = 14;
+    }
+
+    y += 3;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("DATI SPECIFICI FARMACO", margin, y);
+    y += 5;
+
+    for (const ds of activeDrugSections) {
+      doc.setFontSize(7);
+      doc.setTextColor(6, 182, 212);
+      doc.text(ds.title, margin, y + 3);
+      y += 5;
+
+      for (const q of ds.questions) {
+        const answer = data.drugAnswers[q.id];
+        if (!answer) continue;
+
+        if (y > pageHeight - 20) {
+          doc.addPage();
+          doc.setFillColor(11, 15, 25);
+          doc.rect(0, 0, pageWidth, pageHeight, "F");
+          doc.setFillColor(59, 130, 246);
+          doc.rect(0, 0, pageWidth, 4, "F");
+          y = 14;
+        }
+
+        doc.setFontSize(6.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text(q.text, margin + 3, y + 3);
+        doc.setTextColor(241, 245, 249);
+        doc.text(answer, pageWidth - margin, y + 3, { align: "right" });
+        y += 4.5;
+      }
+      y += 2;
     }
   }
 

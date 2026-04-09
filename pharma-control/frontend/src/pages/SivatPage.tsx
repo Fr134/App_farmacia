@@ -37,6 +37,8 @@ import {
   SECTION_E,
   ALL_SECTIONS,
   SUPPORT_OPTIONS,
+  PRELIMINARY_QUESTIONS,
+  DRUG_SPECIFIC_SECTIONS,
   getSectionScore,
   getScoreClass,
   getCriticalities,
@@ -61,6 +63,10 @@ const SCORE_ICONS: Record<string, React.ElementType> = {
 
 export default function SivatPage() {
   const [patientName, setPatientName] = useState("");
+  const [patientAge, setPatientAge] = useState("");
+  const [preliminaryAnswers, setPreliminaryAnswers] = useState<Record<string, string>>({});
+  const [drugSectionEnabled, setDrugSectionEnabled] = useState<Record<string, boolean>>({});
+  const [drugAnswers, setDrugAnswers] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Answers>(() => {
     const init: Answers = {};
     for (const section of ALL_SECTIONS) {
@@ -152,6 +158,10 @@ export default function SivatPage() {
 
   const handleReset = () => {
     setPatientName("");
+    setPatientAge("");
+    setPreliminaryAnswers({});
+    setDrugSectionEnabled({});
+    setDrugAnswers({});
     setAnswers(() => {
       const init: Answers = {};
       for (const section of ALL_SECTIONS) {
@@ -179,6 +189,15 @@ export default function SivatPage() {
 
     try {
       const scoreClass = getScoreClass(totalResult.finalScore);
+      // Merge all extra data into answers JSON for storage
+      const fullAnswers = {
+        ...answers,
+        _patientAge: patientAge ? parseInt(patientAge) : null,
+        _preliminary: preliminaryAnswers,
+        _drugAnswers: drugAnswers,
+        _drugSectionsEnabled: drugSectionEnabled,
+      };
+
       await createSivatAssessment({
         patientName: patientName.trim(),
         scoreA: sectionScores.a!,
@@ -195,7 +214,7 @@ export default function SivatPage() {
         pdcPercentage: pdcPercentage ?? null,
         pdcDaysCovered: pdcDaysCovered ? parseInt(pdcDaysCovered) || null : null,
         pdcDaysObserved: pdcDaysObserved ? parseInt(pdcDaysObserved) || null : null,
-        answers,
+        answers: fullAnswers as unknown as Record<string, number | null>,
         criticalities,
         interventions,
       });
@@ -205,6 +224,7 @@ export default function SivatPage() {
       // Generate PDF after successful save
       generateSivatPdf({
         patientName,
+        patientAge,
         answers,
         sectionScores,
         sectionEEnabled,
@@ -213,6 +233,9 @@ export default function SivatPage() {
         criticalities,
         interventions,
         pdcPercentage,
+        preliminaryAnswers,
+        drugAnswers,
+        drugSectionEnabled,
       });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Errore durante il salvataggio");
@@ -225,6 +248,7 @@ export default function SivatPage() {
     if (!canSave || !totalResult) return;
     generateSivatPdf({
       patientName,
+      patientAge,
       answers,
       sectionScores,
       sectionEEnabled,
@@ -233,6 +257,9 @@ export default function SivatPage() {
       criticalities,
       interventions,
       pdcPercentage,
+      preliminaryAnswers,
+      drugAnswers,
+      drugSectionEnabled,
     });
   };
 
@@ -470,18 +497,121 @@ export default function SivatPage() {
 
       {/* Patient Name */}
       <SectionCard title="Paziente" subtitle="Dati identificativi">
-        <div className="max-w-md">
-          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
-            <User className="h-4 w-4 text-accent-blue" />
-            Nome e Cognome
-          </label>
-          <input
-            type="text"
-            value={patientName}
-            onChange={(e) => setPatientName(e.target.value)}
-            placeholder="es. Mario Rossi"
-            className="w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5 text-base text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
+              <User className="h-4 w-4 text-accent-blue" />
+              Nome e Cognome
+            </label>
+            <input
+              type="text"
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
+              placeholder="es. Mario Rossi"
+              className="w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5 text-base text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
+              Età
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={patientAge}
+              onChange={(e) => setPatientAge(e.target.value)}
+              placeholder="es. 72"
+              className="w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5 text-base font-mono text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Preliminary Questions */}
+      <SectionCard title="Domande Preliminari" subtitle="Contesto generale del paziente">
+        <div className="space-y-4">
+          {PRELIMINARY_QUESTIONS.map((pq) => {
+            // Check conditional visibility
+            if (pq.conditionalOn) {
+              const depValue = preliminaryAnswers[pq.conditionalOn.questionId];
+              if (depValue !== pq.conditionalOn.value) return null;
+            }
+
+            return (
+              <div key={pq.id} className="py-3 border-b border-border-card/50 last:border-0">
+                <p className="text-sm font-medium text-text-primary mb-3">{pq.text}</p>
+
+                {pq.type === "yesno" && (
+                  <div className="flex gap-2">
+                    {["sì", "no"].map((opt) => {
+                      const isSelected = preliminaryAnswers[pq.id] === opt;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => setPreliminaryAnswers((prev) => ({ ...prev, [pq.id]: opt }))}
+                          className={`px-4 py-2 rounded-btn text-sm font-medium border transition-all ${
+                            isSelected
+                              ? "bg-accent-blue/15 border-accent-blue/50 text-accent-blue"
+                              : "border-border-card bg-white/[0.02] text-text-muted hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          {opt === "sì" ? "Sì" : "No"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {pq.type === "choice" && pq.options && (
+                  <div className="flex flex-wrap gap-2">
+                    {pq.options.map((opt) => {
+                      const isSelected = preliminaryAnswers[pq.id] === opt;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => setPreliminaryAnswers((prev) => ({ ...prev, [pq.id]: opt }))}
+                          className={`px-3 py-2 rounded-btn text-xs font-medium border transition-all ${
+                            isSelected
+                              ? "bg-accent-blue/15 border-accent-blue/50 text-accent-blue"
+                              : "border-border-card bg-white/[0.02] text-text-muted hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Follow-up text field */}
+                {pq.followUpText && preliminaryAnswers[pq.id] === "no" && (
+                  <div className="mt-3">
+                    <p className="text-xs text-text-muted mb-1">{pq.followUpText}</p>
+                    <input
+                      type="text"
+                      value={preliminaryAnswers[`${pq.id}_followup`] ?? ""}
+                      onChange={(e) => setPreliminaryAnswers((prev) => ({ ...prev, [`${pq.id}_followup`]: e.target.value }))}
+                      className="w-full max-w-md rounded-btn border border-border-card bg-white/[0.03] px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+                    />
+                  </div>
+                )}
+
+                {/* "Mi è stato consigliato" follow-up */}
+                {(pq.id === "pre3_motivo" || pq.id === "pre3_motivo_ridotto") &&
+                  preliminaryAnswers[pq.id] === "Mi è stato consigliato" && (
+                  <div className="mt-3">
+                    <p className="text-xs text-text-muted mb-1">Da chi?</p>
+                    <input
+                      type="text"
+                      value={preliminaryAnswers[`${pq.id}_dachi`] ?? ""}
+                      onChange={(e) => setPreliminaryAnswers((prev) => ({ ...prev, [`${pq.id}_dachi`]: e.target.value }))}
+                      className="w-full max-w-md rounded-btn border border-border-card bg-white/[0.03] px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </SectionCard>
 
@@ -689,6 +819,70 @@ export default function SivatPage() {
             </div>
           </div>
         )}
+      </SectionCard>
+
+      {/* Drug-Specific Questions (no score, statistical data) */}
+      <SectionCard title="Domande Specifiche per Farmaco" subtitle="Senza punteggio · dati statistici">
+        <div className="space-y-6">
+          {DRUG_SPECIFIC_SECTIONS.map((ds) => {
+            const enabled = drugSectionEnabled[ds.id] ?? false;
+            return (
+              <div key={ds.id} className="border-b border-border-card/30 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3 mb-3">
+                  <button
+                    onClick={() => setDrugSectionEnabled((prev) => ({ ...prev, [ds.id]: !prev[ds.id] }))}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    {enabled ? (
+                      <ToggleRight className="h-5 w-5 text-accent-cyan" />
+                    ) : (
+                      <ToggleLeft className="h-5 w-5 text-text-dim" />
+                    )}
+                    <span className={`font-medium ${enabled ? "text-text-primary" : "text-text-dim"}`}>
+                      {ds.title}
+                    </span>
+                  </button>
+                </div>
+                {enabled && (
+                  <div className="pl-7 space-y-3">
+                    {ds.questions.map((q) => (
+                      <div key={q.id}>
+                        <p className="text-xs text-text-muted mb-1">{q.text}</p>
+                        {q.type === "text" ? (
+                          <input
+                            type="text"
+                            value={drugAnswers[q.id] ?? ""}
+                            onChange={(e) => setDrugAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                            className="w-full max-w-md rounded-btn border border-border-card bg-white/[0.03] px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:border-accent-cyan focus:outline-none focus:ring-1 focus:ring-accent-cyan/30 transition-colors"
+                          />
+                        ) : (
+                          <div className="flex gap-2">
+                            {["sì", "no"].map((opt) => {
+                              const isSelected = drugAnswers[q.id] === opt;
+                              return (
+                                <button
+                                  key={opt}
+                                  onClick={() => setDrugAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                                  className={`px-3 py-1.5 rounded-btn text-xs font-medium border transition-all ${
+                                    isSelected
+                                      ? "bg-accent-cyan/15 border-accent-cyan/50 text-accent-cyan"
+                                      : "border-border-card bg-white/[0.02] text-text-muted hover:bg-white/[0.05]"
+                                  }`}
+                                >
+                                  {opt === "sì" ? "Sì" : "No"}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </SectionCard>
 
       {/* Info */}
