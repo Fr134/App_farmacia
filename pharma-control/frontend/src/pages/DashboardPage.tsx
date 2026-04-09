@@ -290,7 +290,7 @@ export default function DashboardPage() {
     const target = (annualValue / 12) * numMonths;
     const pct = target > 0 ? (actual / target) * 100 : 0;
     return {
-      label: `Budget ${budgetSummary.year}`,
+      label: `Obiettivo ${budgetSummary.year}`,
       targetValue: formatCurrency(target),
       achievementPct: Math.round(pct * 10) / 10,
     };
@@ -299,7 +299,7 @@ export default function DashboardPage() {
     if (!budgetSummary) return undefined;
     const pct = budgetPct > 0 ? (actualPct / budgetPct) * 100 : 0;
     return {
-      label: `Budget ${budgetSummary.year}`,
+      label: `Obiettivo ${budgetSummary.year}`,
       targetValue: formatPercent(budgetPct),
       achievementPct: Math.round(pct * 10) / 10,
     };

@@ -61,10 +61,10 @@ export default function CreateBudgetModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = "Name is required";
-    if (!year || year < 2000) errs.year = "Valid year is required";
+    if (!name.trim()) errs.name = "Nome obbligatorio";
+    if (!year || year < 2000) errs.year = "Anno valido obbligatorio";
     if (baselineSource === "HISTORICAL" && !baselineYear) {
-      errs.baselineYear = "Reference year is required";
+      errs.baselineYear = "Anno di riferimento obbligatorio";
     }
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
@@ -91,7 +91,7 @@ export default function CreateBudgetModal({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border-card px-6 py-4">
             <h2 className="text-base font-semibold text-text-primary">
-              New Budget
+              Nuovo Budget
             </h2>
             <button
               onClick={onClose}
@@ -106,13 +106,13 @@ export default function CreateBudgetModal({
             {/* Name */}
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                Budget name *
+                Nome budget *
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. 2026 Base Scenario"
+                placeholder="es. Budget 2026 - Scenario base"
                 className={`w-full rounded-btn border bg-bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:outline-none ${
                   errors.name ? "border-accent-red" : "border-border-card focus:border-accent-blue"
                 }`}
@@ -123,7 +123,7 @@ export default function CreateBudgetModal({
             {/* Year */}
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                Year *
+                Anno *
               </label>
               <input
                 type="number"
@@ -141,7 +141,7 @@ export default function CreateBudgetModal({
             {/* Baseline Source */}
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-2">
-                Baseline source
+                Fonte dati base
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -154,8 +154,8 @@ export default function CreateBudgetModal({
                   }`}
                 >
                   <BarChart3 className="h-5 w-5" />
-                  <span className="text-xs font-medium">From historical data</span>
-                  <span className="text-[10px] text-text-dim">Uses uploaded CSV reports as baseline</span>
+                  <span className="text-xs font-medium">Da dati storici</span>
+                  <span className="text-[10px] text-text-dim">Usa i report CSV caricati come base</span>
                 </button>
                 <button
                   type="button"
@@ -167,8 +167,8 @@ export default function CreateBudgetModal({
                   }`}
                 >
                   <PenLine className="h-5 w-5" />
-                  <span className="text-xs font-medium">Manual entry</span>
-                  <span className="text-[10px] text-text-dim">Enter values manually</span>
+                  <span className="text-xs font-medium">Inserimento manuale</span>
+                  <span className="text-[10px] text-text-dim">Inserisci i valori manualmente</span>
                 </button>
               </div>
             </div>
@@ -177,15 +177,15 @@ export default function CreateBudgetModal({
             {baselineSource === "HISTORICAL" && (
               <div>
                 <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                  Reference year *
+                  Anno di riferimento *
                 </label>
                 {loadingYears ? (
                   <div className="flex items-center gap-2 text-xs text-text-dim py-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading available years...
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Caricamento anni disponibili...
                   </div>
                 ) : availableYears.length === 0 ? (
                   <div className="rounded-btn border border-accent-amber/30 bg-accent-amber/5 p-3 text-xs text-accent-amber">
-                    No sales data found. Upload a report from the Dashboard first.
+                    Nessun dato di vendita. Carica prima un report dalla Dashboard.
                   </div>
                 ) : (
                   <>
@@ -196,7 +196,7 @@ export default function CreateBudgetModal({
                         errors.baselineYear ? "border-accent-red" : "border-border-card focus:border-accent-blue"
                       }`}
                     >
-                      <option value="">Select year</option>
+                      <option value="">Seleziona anno</option>
                       {availableYears.map((y) => (
                         <option key={y} value={y}>{y}</option>
                       ))}
@@ -212,13 +212,13 @@ export default function CreateBudgetModal({
             {/* Notes */}
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                Notes
+                Note
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                placeholder="Optional notes..."
+                placeholder="Note opzionali..."
                 className="w-full rounded-btn border border-border-card bg-bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none resize-none"
               />
             </div>
@@ -238,7 +238,7 @@ export default function CreateBudgetModal({
               onClick={onClose}
               className="rounded-btn px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
             >
-              Cancel
+              Annulla
             </button>
             <button
               onClick={handleSubmit}
@@ -246,7 +246,7 @@ export default function CreateBudgetModal({
               className="flex items-center gap-2 rounded-btn bg-accent-blue px-4 py-2 text-sm font-medium text-white hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create budget
+              Crea budget
             </button>
           </div>
         </div>

@@ -18,10 +18,10 @@ interface CostsTabProps {
 }
 
 const RECURRENCE_LABELS: Record<RecurrenceType, string> = {
-  NONE: "One-time",
-  MONTHLY: "Monthly",
-  QUARTERLY: "Quarterly",
-  ANNUAL: "Annual",
+  NONE: "Una tantum",
+  MONTHLY: "Mensile",
+  QUARTERLY: "Trimestrale",
+  ANNUAL: "Annuale",
 };
 
 function monthlyAmount(line: BudgetExpenseLine): number {
@@ -108,7 +108,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
     if (lines.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-8 text-text-dim">
-          <p className="text-sm">No items yet.</p>
+          <p className="text-sm">Nessuna voce.</p>
         </div>
       );
     }
@@ -117,12 +117,12 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-card text-left text-[11px] font-medium uppercase tracking-wider text-text-dim">
-            <th className="pb-2 pr-4">Name</th>
-            <th className="pb-2 pr-4">Category</th>
-            <th className="pb-2 pr-4 text-right">Monthly</th>
-            <th className="pb-2 pr-4 text-right">Annual net</th>
-            <th className="pb-2 pr-4 text-right">Annual gross</th>
-            <th className="pb-2 pr-4">Recurrence</th>
+            <th className="pb-2 pr-4">Nome</th>
+            <th className="pb-2 pr-4">Categoria</th>
+            <th className="pb-2 pr-4 text-right">Mensile</th>
+            <th className="pb-2 pr-4 text-right">Annuale netto</th>
+            <th className="pb-2 pr-4 text-right">Annuale lordo</th>
+            <th className="pb-2 pr-4">Ricorrenza</th>
             <th className="pb-2"></th>
           </tr>
         </thead>
@@ -197,18 +197,18 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
       {/* Section 1: Structural costs */}
       <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
         <div className="px-5 pt-5 pb-4">
-          <h3 className="text-sm font-semibold text-text-primary">Structural Costs</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Costi Strutturali</h3>
           <p className="mt-0.5 text-[12px] text-text-dim">
-            Imported automatically from the Expenses module. Edit them in Setup &gt; Expenses.
+            Importati automaticamente dal modulo Spese. Modificali in Spese.
           </p>
         </div>
         <div className="px-5 pb-5">
           {renderExpenseTable(structural, false)}
           {structural.length > 0 && (
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-border-card text-sm font-semibold">
-              <span className="text-text-primary">STRUCTURAL TOTAL</span>
+              <span className="text-text-primary">TOTALE STRUTTURALE</span>
               <div className="flex gap-8 text-right">
-                <span className="font-mono text-text-muted">{formatCurrency(structuralTotals.monthly)}/mo</span>
+                <span className="font-mono text-text-muted">{formatCurrency(structuralTotals.monthly)}/mese</span>
                 <span className="font-mono text-text-primary">{formatCurrency(structuralTotals.annualNet)}</span>
                 <span className="font-mono text-text-dim">{formatCurrency(structuralTotals.annualGross)}</span>
               </div>
@@ -221,9 +221,9 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
       <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div>
-            <h3 className="text-sm font-semibold text-text-primary">Additional Costs & Investments</h3>
+            <h3 className="text-sm font-semibold text-text-primary">Costi Aggiuntivi e Investimenti</h3>
             <p className="mt-0.5 text-[12px] text-text-dim">
-              Add extra costs or one-time investments specific to this budget.
+              Aggiungi costi extra o investimenti specifici per questo budget.
             </p>
           </div>
           {!locked && (
@@ -234,7 +234,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
               }}
               className="flex items-center gap-1.5 rounded-btn bg-accent-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-blue/90 transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" /> Add cost
+              <Plus className="h-3.5 w-3.5" /> Aggiungi costo
             </button>
           )}
         </div>
@@ -242,9 +242,9 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {renderExpenseTable(additional, !locked)}
           {additional.length > 0 && (
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-border-card text-sm font-semibold">
-              <span className="text-text-primary">ADDITIONAL TOTAL</span>
+              <span className="text-text-primary">TOTALE AGGIUNTIVO</span>
               <div className="flex gap-8 text-right">
-                <span className="font-mono text-text-muted">{formatCurrency(additionalTotals.monthly)}/mo</span>
+                <span className="font-mono text-text-muted">{formatCurrency(additionalTotals.monthly)}/mese</span>
                 <span className="font-mono text-text-primary">{formatCurrency(additionalTotals.annualNet)}</span>
                 <span className="font-mono text-text-dim">{formatCurrency(additionalTotals.annualGross)}</span>
               </div>
@@ -256,13 +256,13 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
       {/* Section 3: EBITDA Waterfall */}
       <div className="rounded-card border border-border-card bg-gradient-to-b from-bg-card to-bg-primary">
         <div className="px-5 pt-5 pb-4">
-          <h3 className="text-sm font-semibold text-text-primary">P&L Summary</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Riepilogo Conto Economico</h3>
         </div>
         <div className="px-5 pb-5 space-y-3">
           {/* Revenue */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-primary font-medium">Forecast Revenue</span>
+              <span className="text-text-primary font-medium">Ricavo Previsto</span>
               <div className="flex items-center gap-4">
                 <span className="font-mono font-semibold text-text-primary">{formatCurrency(forecastRevenue)}</span>
                 <span className="font-mono text-xs text-text-dim w-16 text-right">100%</span>
@@ -274,7 +274,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {/* COGS */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-dim pl-4">Cost of goods sold</span>
+              <span className="text-text-dim pl-4">Costo del Venduto</span>
               <div className="flex items-center gap-4">
                 <span className="font-mono text-accent-red">-{formatCurrency(forecastCOGS)}</span>
                 <span className="font-mono text-xs text-text-dim w-16 text-right">
@@ -290,7 +290,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {/* Gross margin */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-primary font-medium">Forecast Gross Margin</span>
+              <span className="text-text-primary font-medium">Margine Lordo Previsto</span>
               <div className="flex items-center gap-4">
                 <span className="font-mono font-semibold" style={{ color: COLORS.accentGreen }}>
                   {formatCurrency(forecastMargin)}
@@ -306,7 +306,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {/* Structural costs */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-dim pl-4">Structural costs</span>
+              <span className="text-text-dim pl-4">Costi strutturali</span>
               <div className="flex items-center gap-4">
                 <span className="font-mono text-accent-red">-{formatCurrency(structuralTotals.annualNet)}</span>
                 <span className="font-mono text-xs text-text-dim w-16 text-right">
@@ -320,7 +320,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {/* Additional costs */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-dim pl-4">Additional costs</span>
+              <span className="text-text-dim pl-4">Costi aggiuntivi</span>
               <div className="flex items-center gap-4">
                 <span className="font-mono text-accent-red">-{formatCurrency(additionalTotals.annualNet)}</span>
                 <span className="font-mono text-xs text-text-dim w-16 text-right">
@@ -336,7 +336,7 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
           {/* EBITDA */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-primary font-bold">Estimated EBITDA</span>
+              <span className="text-text-primary font-bold">EBITDA Stimato</span>
               <div className="flex items-center gap-4">
                 <span
                   className="font-mono font-bold text-base"
@@ -362,18 +362,18 @@ export default function CostsTab({ budget, summary, onUpdate, locked }: CostsTab
             <div className="flex items-start gap-3 rounded-btn border border-accent-green/30 bg-accent-green/5 p-3">
               <CheckCircle className="h-4 w-4 mt-0.5 text-accent-green shrink-0" />
               <p className="text-xs text-text-muted">
-                This budget projects a profit of{" "}
+                Questo budget prevede un utile di{" "}
                 <span className="font-mono font-semibold text-accent-green">{formatCurrency(ebitda)}</span>{" "}
-                ({formatPercent(summary.ebitdaMarginPct)} margin).
+                ({formatPercent(summary.ebitdaMarginPct)} margine).
               </p>
             </div>
           ) : (
             <div className="flex items-start gap-3 rounded-btn border border-accent-red/30 bg-accent-red/5 p-3">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-accent-red shrink-0" />
               <p className="text-xs text-text-muted">
-                This budget projects a loss of{" "}
+                Questo budget prevede una perdita di{" "}
                 <span className="font-mono font-semibold text-accent-red">{formatCurrency(Math.abs(ebitda))}</span>.
-                Review your cost structure or revenue assumptions.
+                Rivedi la struttura dei costi o le ipotesi di ricavo.
               </p>
             </div>
           )}

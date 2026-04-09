@@ -4,19 +4,19 @@ import { formatCurrency } from "@/lib/formatters";
 import type { BudgetExpenseLine, RecurrenceType } from "@/types";
 
 const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; color: string }[] = [
-  { value: "NONE", label: "One-time", color: "bg-text-dim" },
-  { value: "MONTHLY", label: "Monthly", color: "bg-accent-blue" },
-  { value: "QUARTERLY", label: "Quarterly", color: "bg-accent-purple" },
-  { value: "ANNUAL", label: "Annual", color: "bg-accent-amber" },
+  { value: "NONE", label: "Una tantum", color: "bg-text-dim" },
+  { value: "MONTHLY", label: "Mensile", color: "bg-accent-blue" },
+  { value: "QUARTERLY", label: "Trimestrale", color: "bg-accent-purple" },
+  { value: "ANNUAL", label: "Annuale", color: "bg-accent-amber" },
 ];
 
 const VAT_RATES = [0, 4, 5, 10, 22];
 
 const ANNUAL_MULTIPLIER: Record<RecurrenceType, { factor: number; label: string }> = {
-  NONE: { factor: 1, label: "one-time" },
-  MONTHLY: { factor: 12, label: "12 months" },
-  QUARTERLY: { factor: 4, label: "4 quarters" },
-  ANNUAL: { factor: 1, label: "1 year" },
+  NONE: { factor: 1, label: "una tantum" },
+  MONTHLY: { factor: 12, label: "12 mesi" },
+  QUARTERLY: { factor: 4, label: "4 trimestri" },
+  ANNUAL: { factor: 1, label: "1 anno" },
 };
 
 interface BudgetExpenseFormProps {
@@ -86,9 +86,9 @@ export default function BudgetExpenseForm({
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = "Name is required";
-    if (!categoryLabel.trim()) errs.categoryLabel = "Category is required";
-    if (parsedNet <= 0) errs.amountNet = "Amount must be positive";
+    if (!name.trim()) errs.name = "Nome obbligatorio";
+    if (!categoryLabel.trim()) errs.categoryLabel = "Categoria obbligatoria";
+    if (parsedNet <= 0) errs.amountNet = "L'importo deve essere positivo";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -115,7 +115,7 @@ export default function BudgetExpenseForm({
       <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-border-card bg-bg-primary shadow-2xl animate-slide-in-right">
         <div className="flex items-center justify-between border-b border-border-card px-6 py-4">
           <h2 className="text-base font-semibold text-text-primary">
-            {line ? "Edit Cost" : "Add Cost"}
+            {line ? "Modifica Costo" : "Aggiungi Costo"}
           </h2>
           <button
             onClick={onClose}
@@ -129,13 +129,13 @@ export default function BudgetExpenseForm({
           {/* Name */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-              Name *
+              Nome *
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. New POS system"
+              placeholder="es. Nuovo sistema POS"
               className={`w-full rounded-btn border bg-bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:outline-none ${
                 errors.name ? "border-accent-red" : "border-border-card focus:border-accent-blue"
               }`}
@@ -146,13 +146,13 @@ export default function BudgetExpenseForm({
           {/* Category */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-              Category *
+              Categoria *
             </label>
             <input
               type="text"
               value={categoryLabel}
               onChange={(e) => setCategoryLabel(e.target.value)}
-              placeholder="e.g. Equipment, Marketing"
+              placeholder="es. Attrezzature, Marketing"
               className={`w-full rounded-btn border bg-bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:outline-none ${
                 errors.categoryLabel ? "border-accent-red" : "border-border-card focus:border-accent-blue"
               }`}
@@ -164,7 +164,7 @@ export default function BudgetExpenseForm({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                Net amount *
+                Importo netto *
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-dim">&euro;</span>
@@ -183,7 +183,7 @@ export default function BudgetExpenseForm({
             </div>
             <div>
               <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-                VAT rate
+                Aliquota IVA
               </label>
               <select
                 value={vatRate}
@@ -199,7 +199,7 @@ export default function BudgetExpenseForm({
 
           {/* Gross calculation */}
           <div className="rounded-btn border border-border-card bg-white/[0.02] p-3 flex items-center justify-between">
-            <span className="text-xs text-text-muted">Gross total</span>
+            <span className="text-xs text-text-muted">Totale lordo</span>
             <span className="font-mono text-sm font-semibold text-text-primary">
               {formatCurrency(computedGross)}
             </span>
@@ -208,7 +208,7 @@ export default function BudgetExpenseForm({
           {/* Recurrence */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-2">
-              Recurrence
+              Ricorrenza
             </label>
             <div className="grid grid-cols-2 gap-2">
               {RECURRENCE_OPTIONS.map((opt) => (
@@ -231,7 +231,7 @@ export default function BudgetExpenseForm({
           {/* Annual total */}
           <div className="rounded-btn border border-accent-blue/20 bg-accent-blue/5 p-3 flex items-center justify-between">
             <span className="text-xs text-text-muted">
-              Annual total ({formatCurrency(parsedNet)} x {annualInfo.label})
+              Totale annuale ({formatCurrency(parsedNet)} x {annualInfo.label})
             </span>
             <span className="font-mono text-sm font-semibold text-accent-blue">
               {formatCurrency(annualTotal)}
@@ -241,13 +241,13 @@ export default function BudgetExpenseForm({
           {/* Notes */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-wider text-text-dim mb-1.5">
-              Notes
+              Note
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="Optional notes..."
+              placeholder="Note opzionali..."
               className="w-full rounded-btn border border-border-card bg-bg-card px-3 py-2 text-sm text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none resize-none"
             />
           </div>
@@ -259,7 +259,7 @@ export default function BudgetExpenseForm({
             onClick={onClose}
             className="rounded-btn px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
           >
-            Cancel
+            Annulla
           </button>
           <button
             onClick={handleSubmit}
@@ -267,7 +267,7 @@ export default function BudgetExpenseForm({
             className="flex items-center gap-2 rounded-btn bg-accent-blue px-4 py-2 text-sm font-medium text-white hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {line ? "Update" : "Add cost"}
+            {line ? "Aggiorna" : "Aggiungi costo"}
           </button>
         </div>
       </div>

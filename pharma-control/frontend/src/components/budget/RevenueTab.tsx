@@ -14,9 +14,9 @@ interface RevenueTabProps {
 type AdjustmentModeUI = "global" | "category";
 
 const MODE_OPTIONS: { value: AdjustmentMode; label: string }[] = [
-  { value: "NO_CHANGE", label: "No change" },
-  { value: "PCT_CHANGE", label: "% change" },
-  { value: "ABSOLUTE", label: "Absolute value" },
+  { value: "NO_CHANGE", label: "Invariato" },
+  { value: "PCT_CHANGE", label: "Variazione %" },
+  { value: "ABSOLUTE", label: "Valore assoluto" },
 ];
 
 export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps) {
@@ -167,8 +167,8 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
         <div className="flex items-start gap-3 rounded-btn border border-accent-blue/30 bg-accent-blue/5 p-4">
           <Info className="h-4 w-4 mt-0.5 text-accent-blue shrink-0" />
           <p className="text-xs text-text-muted">
-            This budget uses manually entered baseline values. For automatic baseline from sales
-            data, create a new budget using historical reports.
+            Questo budget usa valori di base inseriti manualmente. Per una base automatica dai dati
+            di vendita, crea un nuovo budget usando i report storici.
           </p>
         </div>
       )}
@@ -177,7 +177,7 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
       {!locked && (
         <div className="rounded-btn border border-border-card bg-white/[0.02] p-4">
           <div className="flex items-center gap-4">
-            <span className="text-sm text-text-muted">Adjustment mode:</span>
+            <span className="text-sm text-text-muted">Modalità di rettifica:</span>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="radio"
@@ -186,7 +186,7 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
                 onChange={() => setMode("category")}
                 className="accent-accent-blue"
               />
-              <span className="text-sm text-text-primary">By category</span>
+              <span className="text-sm text-text-primary">Per categoria</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
@@ -196,13 +196,13 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
                 onChange={() => setMode("global")}
                 className="accent-accent-blue"
               />
-              <span className="text-sm text-text-primary">Global (simple mode)</span>
+              <span className="text-sm text-text-primary">Globale (modo semplice)</span>
             </label>
           </div>
 
           {mode === "global" && (
             <div className="flex items-center gap-3 mt-3">
-              <span className="text-xs text-text-dim">Apply a uniform adjustment to all categories:</span>
+              <span className="text-xs text-text-dim">Applica una rettifica uniforme a tutte le categorie:</span>
               <div className="relative">
                 <input
                   type="text"
@@ -218,7 +218,7 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
                 className="flex items-center gap-1.5 rounded-btn bg-accent-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                Apply to all
+                Applica a tutti
               </button>
             </div>
           )}
@@ -231,12 +231,12 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
           {saving ? (
             <>
               <Loader2 className="h-3 w-3 animate-spin text-accent-blue" />
-              <span className="text-text-dim">Saving...</span>
+              <span className="text-text-dim">Salvataggio...</span>
             </>
           ) : (
             <>
               <Check className="h-3 w-3 text-accent-green" />
-              <span className="text-accent-green">Saved</span>
+              <span className="text-accent-green">Salvato</span>
             </>
           )}
         </div>
@@ -245,9 +245,9 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
       {/* Revenue table */}
       {budget.revenueLines.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-dim">
-          <p className="text-sm">No revenue lines yet.</p>
+          <p className="text-sm">Nessuna riga di ricavo.</p>
           {budget.baselineSource === "MANUAL" && (
-            <p className="text-xs mt-1">Revenue lines will be added in a future update.</p>
+            <p className="text-xs mt-1">Le righe di ricavo saranno aggiunte in un prossimo aggiornamento.</p>
           )}
         </div>
       ) : (
@@ -255,20 +255,20 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-card text-left text-[11px] font-medium uppercase tracking-wider text-text-dim">
-                <th className="pb-2 pr-4">Category</th>
-                <th className="pb-2 pr-4 text-right">Baseline Rev.</th>
+                <th className="pb-2 pr-4">Categoria</th>
+                <th className="pb-2 pr-4 text-right">Ricavo Base</th>
                 <th className="pb-2 pr-4 text-right">
                   <span className="inline-flex items-center gap-1">
-                    Margin % <Lock className="h-3 w-3" />
+                    Margine % <Lock className="h-3 w-3" />
                   </span>
                 </th>
                 {!locked && mode === "category" && (
-                  <th className="pb-2 pr-4">Adjustment</th>
+                  <th className="pb-2 pr-4">Rettifica</th>
                 )}
-                <th className="pb-2 pr-4 text-right">Forecast Rev.</th>
-                <th className="pb-2 pr-4 text-right">Forecast COGS</th>
-                <th className="pb-2 pr-4 text-right">Forecast Margin</th>
-                <th className="pb-2 text-right">Margin %</th>
+                <th className="pb-2 pr-4 text-right">Ricavo Prev.</th>
+                <th className="pb-2 pr-4 text-right">Costo Prev.</th>
+                <th className="pb-2 pr-4 text-right">Margine Prev.</th>
+                <th className="pb-2 text-right">Margine %</th>
               </tr>
             </thead>
             <tbody>
@@ -289,7 +289,7 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
                     <td className="py-2.5 pr-4 text-right">
                       <span
                         className="inline-flex items-center gap-1 font-mono text-text-dim"
-                        title="Margin % is locked to historical data"
+                        title="Il Margine % è bloccato ai dati storici"
                       >
                         <Lock className="h-3 w-3 text-text-dim/50" />
                         {formatPercent(line.baselineMarginPct)}
@@ -341,7 +341,7 @@ export default function RevenueTab({ budget, onUpdate, locked }: RevenueTabProps
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-border-card font-semibold">
-                <td className="pt-3 pr-4 text-text-primary">TOTAL</td>
+                <td className="pt-3 pr-4 text-text-primary">TOTALE</td>
                 <td className="pt-3 pr-4 text-right font-mono text-text-dim">
                   {formatCurrency(totals.baselineRevenue)}
                 </td>

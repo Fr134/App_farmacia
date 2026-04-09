@@ -29,14 +29,14 @@ export default function BudgetListPage() {
       setModalOpen(false);
       navigate(`/budget/${result.budget.id}`);
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Unknown error");
+      setCreateError(err instanceof Error ? err.message : "Errore sconosciuto");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this budget?")) return;
+    if (!confirm("Eliminare questo budget?")) return;
     try {
       await deleteBudget(id);
       refetch();
@@ -51,10 +51,10 @@ export default function BudgetListPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-text-primary">
-            Budget & Forecasting
+            Budget e Previsioni
           </h1>
           <p className="mt-1 text-sm text-text-dim">
-            Annual revenue forecasts and cost planning
+            Previsioni di ricavo annuali e pianificazione costi
           </p>
         </div>
         {isAdmin && (
@@ -62,7 +62,7 @@ export default function BudgetListPage() {
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-2 rounded-btn bg-accent-blue px-4 py-2 text-sm font-medium text-white hover:bg-accent-blue/90 transition-colors"
           >
-            <Plus className="h-4 w-4" /> New Budget
+            <Plus className="h-4 w-4" /> Nuovo Budget
           </button>
         )}
       </div>
@@ -84,7 +84,7 @@ export default function BudgetListPage() {
             onClick={refetch}
             className="mt-3 rounded-btn px-4 py-2 text-xs font-medium text-accent-blue hover:bg-accent-blue/10 transition-colors"
           >
-            Retry
+            Riprova
           </button>
         </div>
       ) : budgets.length === 0 ? (
@@ -93,17 +93,17 @@ export default function BudgetListPage() {
             <BarChart3 className="h-8 w-8 text-accent-blue" />
           </div>
           <h2 className="text-base font-semibold text-text-primary mb-1">
-            No budgets yet
+            Nessun budget
           </h2>
           <p className="text-sm text-text-dim mb-4">
-            Create your first budget to start forecasting
+            Crea il tuo primo budget per iniziare le previsioni
           </p>
           {isAdmin && (
             <button
               onClick={() => setModalOpen(true)}
               className="flex items-center gap-2 rounded-btn bg-accent-blue px-4 py-2 text-sm font-medium text-white hover:bg-accent-blue/90 transition-colors"
             >
-              <Plus className="h-4 w-4" /> New Budget
+              <Plus className="h-4 w-4" /> Nuovo Budget
             </button>
           )}
         </div>

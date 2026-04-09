@@ -22,9 +22,9 @@ import type { Budget, BudgetRevenueLine, BudgetSummary } from "@/types";
 type TabKey = "revenue" | "costs";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  DRAFT: { bg: "bg-accent-amber/15", text: "text-accent-amber", label: "Draft" },
-  CONFIRMED: { bg: "bg-accent-green/15", text: "text-accent-green", label: "Confirmed" },
-  ARCHIVED: { bg: "bg-text-dim/15", text: "text-text-dim", label: "Archived" },
+  DRAFT: { bg: "bg-accent-amber/15", text: "text-accent-amber", label: "Bozza" },
+  CONFIRMED: { bg: "bg-accent-green/15", text: "text-accent-green", label: "Confermato" },
+  ARCHIVED: { bg: "bg-text-dim/15", text: "text-text-dim", label: "Archiviato" },
 };
 
 export default function BudgetDetailPage() {
@@ -80,12 +80,12 @@ export default function BudgetDetailPage() {
   if (error || !budget || !summary) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-text-dim">
-        <p className="text-sm">{error ?? "Budget not found"}</p>
+        <p className="text-sm">{error ?? "Budget non trovato"}</p>
         <button
           onClick={() => navigate("/budget")}
           className="mt-3 rounded-btn px-4 py-2 text-xs font-medium text-accent-blue hover:bg-accent-blue/10 transition-colors"
         >
-          Back to budgets
+          Torna ai budget
         </button>
       </div>
     );
@@ -101,7 +101,7 @@ export default function BudgetDetailPage() {
         <div className="flex items-center gap-2 rounded-btn border border-accent-amber/30 bg-accent-amber/5 p-3">
           <Lock className="h-4 w-4 text-accent-amber" />
           <span className="text-xs text-text-muted">
-            This budget is confirmed and locked for editing.
+            Questo budget è confermato e bloccato per la modifica.
           </span>
         </div>
       )}
@@ -113,7 +113,7 @@ export default function BudgetDetailPage() {
             onClick={() => navigate("/budget")}
             className="flex items-center gap-1 text-xs text-text-dim hover:text-text-primary transition-colors mb-2"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to budgets
+            <ArrowLeft className="h-3.5 w-3.5" /> Torna ai budget
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-text-primary">{budget.name}</h1>
@@ -122,8 +122,8 @@ export default function BudgetDetailPage() {
             </span>
           </div>
           <p className="mt-1 text-xs text-text-dim">
-            Year: {budget.year} &nbsp;|&nbsp; Baseline: {budget.baselineSource === "HISTORICAL" ? `Historical ${budget.baselineYear}` : "Manual"}
-            &nbsp;|&nbsp; Last updated: {new Date(budget.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            Anno: {budget.year} &nbsp;|&nbsp; Base: {budget.baselineSource === "HISTORICAL" ? `Storica ${budget.baselineYear}` : "Manuale"}
+            &nbsp;|&nbsp; Ultimo aggiornamento: {new Date(budget.updatedAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}
           </p>
         </div>
 
@@ -139,11 +139,11 @@ export default function BudgetDetailPage() {
           >
             {budget.status === "DRAFT" ? (
               <>
-                <Lock className="h-4 w-4" /> Confirm budget
+                <Lock className="h-4 w-4" /> Conferma budget
               </>
             ) : (
               <>
-                <Unlock className="h-4 w-4" /> Reopen budget
+                <Unlock className="h-4 w-4" /> Riapri budget
               </>
             )}
           </button>
@@ -153,28 +153,28 @@ export default function BudgetDetailPage() {
       {/* KPI summary bar */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
-          label="Forecast Revenue"
+          label="Ricavo Previsto"
           value={formatCurrency(summary.totalForecastRevenue)}
           icon={DollarSign}
           accentColor={COLORS.accentBlue}
         />
         <KPICard
-          label="Est. Gross Margin"
+          label="Margine Lordo Previsto"
           value={formatCurrency(summary.totalForecastMargin)}
-          subtitle={`${formatPercent(summary.forecastMarginPct)} margin`}
+          subtitle={`${formatPercent(summary.forecastMarginPct)} margine`}
           icon={TrendingUp}
           accentColor={COLORS.accentGreen}
         />
         <KPICard
-          label="Annual Costs"
+          label="Costi Annuali"
           value={formatCurrency(summary.totalAnnualExpenses)}
           icon={Receipt}
           accentColor={COLORS.accentAmber}
         />
         <KPICard
-          label="Est. EBITDA"
+          label="EBITDA Stimato"
           value={formatCurrency(summary.estimatedEBITDA)}
-          subtitle={`${formatPercent(summary.ebitdaMarginPct)} margin`}
+          subtitle={`${formatPercent(summary.ebitdaMarginPct)} margine`}
           icon={Target}
           accentColor={ebitdaPositive ? COLORS.accentGreen : COLORS.accentRed}
         />
@@ -190,7 +190,7 @@ export default function BudgetDetailPage() {
               : "border-transparent text-text-dim hover:text-text-muted"
           }`}
         >
-          Revenue Forecast
+          Previsione Ricavi
         </button>
         <button
           onClick={() => setActiveTab("costs")}
@@ -200,7 +200,7 @@ export default function BudgetDetailPage() {
               : "border-transparent text-text-dim hover:text-text-muted"
           }`}
         >
-          Costs & EBITDA
+          Costi & EBITDA
         </button>
       </div>
 

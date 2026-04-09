@@ -11,9 +11,9 @@ interface BudgetCardProps {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  DRAFT: { bg: "bg-accent-amber/15", text: "text-accent-amber", label: "Draft" },
-  CONFIRMED: { bg: "bg-accent-green/15", text: "text-accent-green", label: "Confirmed" },
-  ARCHIVED: { bg: "bg-text-dim/15", text: "text-text-dim", label: "Archived" },
+  DRAFT: { bg: "bg-accent-amber/15", text: "text-accent-amber", label: "Bozza" },
+  CONFIRMED: { bg: "bg-accent-green/15", text: "text-accent-green", label: "Confermato" },
+  ARCHIVED: { bg: "bg-text-dim/15", text: "text-text-dim", label: "Archiviato" },
 };
 
 export default function BudgetCard({ budget, onDelete, isAdmin }: BudgetCardProps) {
@@ -42,26 +42,26 @@ export default function BudgetCard({ budget, onDelete, isAdmin }: BudgetCardProp
 
         <h3 className="text-base font-bold text-text-primary mb-1">{budget.name}</h3>
         <p className="text-[11px] text-text-dim mb-4">
-          Baseline: {budget.baselineSource === "HISTORICAL" ? `Historical ${budget.baselineYear}` : "Manual"}
+          Base: {budget.baselineSource === "HISTORICAL" ? `Storica ${budget.baselineYear}` : "Manuale"}
         </p>
 
         {/* Metrics */}
         <div className="space-y-2 border-t border-border-card pt-3">
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Forecast Revenue</span>
+            <span className="text-text-muted">Ricavo Previsto</span>
             <span className="font-mono font-semibold text-text-primary">
               {formatCurrency(s.totalForecastRevenue)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Forecast Margin</span>
+            <span className="text-text-muted">Margine Lordo Previsto</span>
             <span className="font-mono font-semibold text-text-primary">
               {formatCurrency(s.totalForecastMargin)}{" "}
               <span className="text-text-dim text-xs">({formatPercent(s.forecastMarginPct)})</span>
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Annual Costs</span>
+            <span className="text-text-muted">Costi Annuali</span>
             <span className="font-mono font-semibold text-text-primary">
               {formatCurrency(s.totalAnnualExpenses)}
             </span>
@@ -70,7 +70,7 @@ export default function BudgetCard({ budget, onDelete, isAdmin }: BudgetCardProp
 
         <div className="border-t border-border-card mt-3 pt-3 space-y-1">
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-text-primary">Est. EBITDA</span>
+            <span className="font-medium text-text-primary">EBITDA Stimato</span>
             <span
               className="font-mono font-bold"
               style={{ color: ebitdaPositive ? COLORS.accentGreen : COLORS.accentRed }}
@@ -79,7 +79,7 @@ export default function BudgetCard({ budget, onDelete, isAdmin }: BudgetCardProp
             </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-text-dim">EBITDA margin</span>
+            <span className="text-text-dim">margine EBITDA</span>
             <span
               className="font-mono font-medium"
               style={{ color: ebitdaPositive ? COLORS.accentGreen : COLORS.accentRed }}
@@ -95,14 +95,14 @@ export default function BudgetCard({ budget, onDelete, isAdmin }: BudgetCardProp
             onClick={() => navigate(`/budget/${budget.id}`)}
             className="flex items-center gap-1.5 rounded-btn px-3 py-1.5 text-xs font-medium text-accent-blue hover:bg-accent-blue/10 transition-colors"
           >
-            Edit budget <ArrowRight className="h-3.5 w-3.5" />
+            Modifica budget <ArrowRight className="h-3.5 w-3.5" />
           </button>
 
           {isAdmin && budget.status === "DRAFT" && (
             <button
               onClick={() => onDelete(budget.id)}
               className="rounded-btn p-1.5 text-text-dim hover:bg-accent-red/10 hover:text-accent-red transition-colors"
-              title="Delete budget"
+              title="Elimina budget"
             >
               <Trash2 className="h-4 w-4" />
             </button>
