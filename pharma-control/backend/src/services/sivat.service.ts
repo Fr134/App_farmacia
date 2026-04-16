@@ -19,7 +19,7 @@ export interface CreateSivatInput {
   pdcPercentage?: number | null;
   pdcDaysCovered?: number | null;
   pdcDaysObserved?: number | null;
-  answers: Record<string, number | null>;
+  answers: Record<string, number | string | boolean | Record<string, string | number | boolean | null> | null>;
   criticalities: string[];
   interventions: string[];
 }

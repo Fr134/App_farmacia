@@ -29,7 +29,7 @@ router.post(
       pdcPercentage: z.number().nullable().optional(),
       pdcDaysCovered: z.number().int().nullable().optional(),
       pdcDaysObserved: z.number().int().nullable().optional(),
-      answers: z.record(z.number().nullable()),
+      answers: z.record(z.union([z.number().nullable(), z.string().nullable(), z.boolean(), z.record(z.union([z.string(), z.number(), z.boolean(), z.null()]))])),
       criticalities: z.array(z.string()),
       interventions: z.array(z.string()),
     });

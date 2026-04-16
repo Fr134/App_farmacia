@@ -214,7 +214,7 @@ export default function SivatPage() {
         pdcPercentage: pdcPercentage ?? null,
         pdcDaysCovered: pdcDaysCovered ? parseInt(pdcDaysCovered) || null : null,
         pdcDaysObserved: pdcDaysObserved ? parseInt(pdcDaysObserved) || null : null,
-        answers: fullAnswers as unknown as Record<string, number | null>,
+        answers: fullAnswers,
         criticalities,
         interventions,
       });

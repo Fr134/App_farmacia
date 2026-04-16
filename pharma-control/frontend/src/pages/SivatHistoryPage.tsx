@@ -105,7 +105,7 @@ export default function SivatHistoryPage() {
     generateSivatPdf({
       patientName: a.patientName,
       patientAge: raw._patientAge ? String(raw._patientAge) : "",
-      answers: a.answers,
+      answers: a.answers as Record<string, number | null>,
       sectionScores: {
         a: a.scoreA,
         b: a.scoreB,
