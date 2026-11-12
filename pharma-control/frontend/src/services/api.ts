@@ -396,6 +396,7 @@ export interface SivatAssessmentData {
   id: string;
   userId: string;
   userName?: string;
+  patientId: string | null;
   patientName: string;
   scoreA: number;
   scoreB: number;
@@ -429,7 +430,47 @@ export interface SivatDashboardData {
   sectionEUsageRate: number;
 }
 
-export async function createSivatAssessment(data: Omit<SivatAssessmentData, "id" | "userId" | "userName" | "createdAt">): Promise<{ assessment: SivatAssessmentData }> {
+export interface SivatPatientInput {
+  id?: string | null;
+  fullName: string;
+  birthDate: string | null; // YYYY-MM-DD
+  phone: string | null;
+  fiscalCode: string | null;
+  notes: string | null;
+}
+
+export interface SivatPatientData {
+  id: string;
+  fullName: string;
+  birthDate: string | null;
+  phone: string | null;
+  fiscalCode: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assessmentCount: number;
+  lastAssessmentAt: string | null;
+}
+
+export type CreateSivatAssessmentInput = Omit<
+  SivatAssessmentData,
+  "id" | "userId" | "userName" | "createdAt" | "patientId" | "patientName"
+> & { patient: SivatPatientInput };
+
+export async function getSivatPatients(q?: string): Promise<{ patients: SivatPatientData[] }> {
+  const sp = new URLSearchParams();
+  if (q) sp.set("q", q);
+  return request(`/sivat/clients?${sp.toString()}`);
+}
+
+export async function getSivatPatientWithLatest(id: string): Promise<{
+  patient: SivatPatientData;
+  latestAssessment: SivatAssessmentData | null;
+}> {
+  return request(`/sivat/clients/${encodeURIComponent(id)}`);
+}
+
+export async function createSivatAssessment(data: CreateSivatAssessmentInput): Promise<{ assessment: SivatAssessmentData }> {
   return request("/sivat/assessments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

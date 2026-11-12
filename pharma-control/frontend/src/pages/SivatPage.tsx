@@ -1,13 +1,11 @@
 import { useState, useMemo } from "react";
 import {
   ClipboardCheck,
-  User,
   Brain,
   Pill,
   Settings,
   Heart,
   HandHelping,
-  Download,
   RotateCcw,
   ChevronDown,
   ChevronUp,
@@ -24,7 +22,18 @@ import {
 import { Link } from "react-router-dom";
 import SectionCard from "@/components/ui/SectionCard";
 import { generateSivatPdf } from "@/lib/sivatPdf";
-import { createSivatAssessment } from "@/services/api";
+import {
+  createSivatAssessment,
+  getSivatPatientWithLatest,
+  type SivatAssessmentData,
+  type SivatPatientData,
+} from "@/services/api";
+import PatientCard, {
+  EMPTY_PATIENT_FORM,
+  computeAge,
+  type PatientFormValue,
+  type PatientMode,
+} from "@/components/sivat/PatientCard";
 import {
   type SivatSectionDef,
   type SivatQuestion,
@@ -61,21 +70,57 @@ const SCORE_ICONS: Record<string, React.ElementType> = {
   "accent-red": XCircle,
 };
 
+function emptyAnswers(): Answers {
+  const init: Answers = {};
+  for (const section of ALL_SECTIONS) {
+    for (const q of section.questions) {
+      init[q.id] = null;
+    }
+  }
+  return init;
+}
+
+function asStringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
+function asBoolRecord(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== "object") return {};
+  const out: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === "boolean") out[k] = v;
+  }
+  return out;
+}
+
+function patientToForm(p: SivatPatientData): PatientFormValue {
+  return {
+    fullName: p.fullName,
+    birthDate: p.birthDate ?? "",
+    phone: p.phone ?? "",
+    fiscalCode: p.fiscalCode ?? "",
+    notes: p.notes ?? "",
+  };
+}
+
 export default function SivatPage() {
-  const [patientName, setPatientName] = useState("");
-  const [patientAge, setPatientAge] = useState("");
+  const [patientMode, setPatientMode] = useState<PatientMode>("new");
+  const [patientId, setPatientId] = useState<string | null>(null);
+  const [patientForm, setPatientForm] = useState<PatientFormValue>(EMPTY_PATIENT_FORM);
+  const [loadingPrefill, setLoadingPrefill] = useState(false);
+  const [prefilledFrom, setPrefilledFrom] = useState<string | null>(null);
+  const patientName = patientForm.fullName;
+  const computedAge = computeAge(patientForm.birthDate);
+  const patientAge = computedAge !== null ? String(computedAge) : "";
   const [preliminaryAnswers, setPreliminaryAnswers] = useState<Record<string, string>>({});
   const [drugSectionEnabled, setDrugSectionEnabled] = useState<Record<string, boolean>>({});
   const [drugAnswers, setDrugAnswers] = useState<Record<string, string>>({});
-  const [answers, setAnswers] = useState<Answers>(() => {
-    const init: Answers = {};
-    for (const section of ALL_SECTIONS) {
-      for (const q of section.questions) {
-        init[q.id] = null;
-      }
-    }
-    return init;
-  });
+  const [answers, setAnswers] = useState<Answers>(emptyAnswers);
   const [sectionEEnabled, setSectionEEnabled] = useState(false);
   const [supportLevel, setSupportLevel] = useState<number | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -156,21 +201,11 @@ export default function SivatPage() {
     [sectionScores, supportLevel, sectionEEnabled]
   );
 
-  const handleReset = () => {
-    setPatientName("");
-    setPatientAge("");
+  const resetQuestionnaire = () => {
     setPreliminaryAnswers({});
     setDrugSectionEnabled({});
     setDrugAnswers({});
-    setAnswers(() => {
-      const init: Answers = {};
-      for (const section of ALL_SECTIONS) {
-        for (const q of section.questions) {
-          init[q.id] = null;
-        }
-      }
-      return init;
-    });
+    setAnswers(emptyAnswers());
     setSectionEEnabled(false);
     setSupportLevel(null);
     setPdcDaysCovered("");
@@ -179,7 +214,64 @@ export default function SivatPage() {
     setSaveError(null);
   };
 
-  const canSave = patientName.trim().length > 0 && totalResult !== null;
+  const clearPatient = () => {
+    setPatientId(null);
+    setPatientForm(EMPTY_PATIENT_FORM);
+    setPrefilledFrom(null);
+  };
+
+  const handleReset = () => {
+    clearPatient();
+    setPatientMode("new");
+    resetQuestionnaire();
+  };
+
+  const handleModeChange = (mode: PatientMode) => {
+    if (mode === patientMode) return;
+    // Never carry one client's answers over to another
+    clearPatient();
+    resetQuestionnaire();
+    setPatientMode(mode);
+  };
+
+  const applyPrefill = (a: SivatAssessmentData) => {
+    const raw = a.answers;
+    const restored = emptyAnswers();
+    for (const key of Object.keys(restored)) {
+      const v = raw[key];
+      restored[key] = typeof v === "number" ? v : null;
+    }
+    setAnswers(restored);
+    setPreliminaryAnswers(asStringRecord(raw._preliminary));
+    setDrugAnswers(asStringRecord(raw._drugAnswers));
+    setDrugSectionEnabled(asBoolRecord(raw._drugSectionsEnabled));
+    setSectionEEnabled(a.sectionEEnabled);
+    setSupportLevel(a.supportLevel);
+    setPdcDaysCovered(a.pdcDaysCovered != null ? String(a.pdcDaysCovered) : "");
+    setPdcDaysObserved(a.pdcDaysObserved != null ? String(a.pdcDaysObserved) : "");
+  };
+
+  const handleSelectPatient = async (p: SivatPatientData) => {
+    resetQuestionnaire();
+    setPatientId(p.id);
+    setPatientForm(patientToForm(p));
+    setPrefilledFrom(null);
+    setLoadingPrefill(true);
+    try {
+      const { patient, latestAssessment } = await getSivatPatientWithLatest(p.id);
+      setPatientForm(patientToForm(patient));
+      if (latestAssessment) {
+        applyPrefill(latestAssessment);
+        setPrefilledFrom(latestAssessment.createdAt);
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Errore nel caricamento del cliente");
+    } finally {
+      setLoadingPrefill(false);
+    }
+  };
+
+  const canSave = patientName.trim().length > 0 && totalResult !== null && !loadingPrefill;
 
   const handleSaveAndDownload = async () => {
     if (!canSave || !totalResult) return;
@@ -192,14 +284,21 @@ export default function SivatPage() {
       // Merge all extra data into answers JSON for storage
       const fullAnswers = {
         ...answers,
-        _patientAge: patientAge ? parseInt(patientAge) : null,
+        _patientAge: computedAge,
         _preliminary: preliminaryAnswers,
         _drugAnswers: drugAnswers,
         _drugSectionsEnabled: drugSectionEnabled,
       };
 
-      await createSivatAssessment({
-        patientName: patientName.trim(),
+      const { assessment } = await createSivatAssessment({
+        patient: {
+          id: patientId,
+          fullName: patientForm.fullName.trim(),
+          birthDate: patientForm.birthDate || null,
+          phone: patientForm.phone.trim() || null,
+          fiscalCode: patientForm.fiscalCode.trim() || null,
+          notes: patientForm.notes.trim() || null,
+        },
         scoreA: sectionScores.a!,
         scoreB: sectionScores.b!,
         scoreC: sectionScores.c!,
@@ -220,6 +319,12 @@ export default function SivatPage() {
       });
 
       setSaveSuccess(true);
+      // Client is now registered: further saves update the same record
+      if (assessment.patientId) {
+        setPatientId(assessment.patientId);
+        setPatientMode("existing");
+        setPrefilledFrom(assessment.createdAt);
+      }
 
       // Generate PDF after successful save
       generateSivatPdf({
@@ -242,25 +347,6 @@ export default function SivatPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDownloadPdfOnly = () => {
-    if (!canSave || !totalResult) return;
-    generateSivatPdf({
-      patientName,
-      patientAge,
-      answers,
-      sectionScores,
-      sectionEEnabled,
-      supportLevel,
-      totalScore: totalResult.finalScore,
-      criticalities,
-      interventions,
-      pdcPercentage,
-      preliminaryAnswers,
-      drugAnswers,
-      drugSectionEnabled,
-    });
   };
 
   // ── Render Helpers ──
@@ -379,18 +465,6 @@ export default function SivatPage() {
             Reset
           </button>
           <button
-            onClick={handleDownloadPdfOnly}
-            disabled={!canSave}
-            className={`flex items-center gap-2 rounded-btn border border-border-card px-4 py-2 text-sm font-medium transition-colors ${
-              canSave
-                ? "text-text-muted hover:bg-white/[0.03] hover:text-text-primary"
-                : "text-text-dim cursor-not-allowed"
-            }`}
-          >
-            <Download className="h-4 w-4" />
-            Solo PDF
-          </button>
-          <button
             onClick={handleSaveAndDownload}
             disabled={!canSave || saving}
             className={`flex items-center gap-2 rounded-btn px-4 py-2 text-sm font-semibold transition-colors ${
@@ -495,37 +569,21 @@ export default function SivatPage() {
         );
       })()}
 
-      {/* Patient Name */}
-      <SectionCard title="Paziente" subtitle="Dati identificativi">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-          <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
-              <User className="h-4 w-4 text-accent-blue" />
-              Nome e Cognome
-            </label>
-            <input
-              type="text"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="es. Mario Rossi"
-              className="w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5 text-base text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
-            />
-          </div>
-          <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-text-muted">
-              Età
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={patientAge}
-              onChange={(e) => setPatientAge(e.target.value)}
-              placeholder="es. 72"
-              className="w-full rounded-btn border border-border-card bg-white/[0.03] px-4 py-3.5 text-base font-mono text-text-primary placeholder:text-text-dim/50 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue/30 transition-colors"
-            />
-          </div>
-        </div>
-      </SectionCard>
+      {/* Patient */}
+      <PatientCard
+        mode={patientMode}
+        onModeChange={handleModeChange}
+        value={patientForm}
+        onChange={setPatientForm}
+        selectedPatientId={patientId}
+        onSelectPatient={handleSelectPatient}
+        onClearSelection={() => {
+          clearPatient();
+          resetQuestionnaire();
+        }}
+        loadingPrefill={loadingPrefill}
+        prefilledFrom={prefilledFrom}
+      />
 
       {/* Preliminary Questions */}
       <SectionCard title="Domande Preliminari" subtitle="Contesto generale del paziente">
@@ -889,7 +947,7 @@ export default function SivatPage() {
       {!canSave && (
         <p className="text-center text-xs text-text-dim">
           {!patientName.trim()
-            ? "Inserisci il nome del paziente per abilitare il salvataggio"
+            ? patientMode === "existing" && !patientId ? "Seleziona un cliente registrato per abilitare il salvataggio" : "Inserisci nome e cognome del paziente per abilitare il salvataggio"
             : "Completa tutte le sezioni per generare il report SIVAT-D"}
         </p>
       )}

@@ -3,8 +3,24 @@ import { Prisma } from "@prisma/client";
 
 // ── Types ──
 
+export class SivatValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SivatValidationError";
+  }
+}
+
+export interface PatientInput {
+  id?: string | null;
+  fullName: string;
+  birthDate?: string | null; // YYYY-MM-DD
+  phone?: string | null;
+  fiscalCode?: string | null;
+  notes?: string | null;
+}
+
 export interface CreateSivatInput {
-  patientName: string;
+  patient: PatientInput;
   scoreA: number;
   scoreB: number;
   scoreC: number;
@@ -44,6 +60,7 @@ function serialize(assessment: Record<string, unknown>) {
     // Flatten snake_case to camelCase
     id: assessment.id,
     userId: assessment.user_id,
+    patientId: assessment.patient_id ?? null,
     patientName: assessment.patient_name,
     scoreA: assessment.score_a,
     scoreB: assessment.score_b,
@@ -66,14 +83,173 @@ function serialize(assessment: Record<string, unknown>) {
   };
 }
 
+// ── Patients (anagrafica) ──
+
+type PatientRow = {
+  id: string;
+  full_name: string;
+  birth_date: Date | null;
+  phone: string | null;
+  fiscal_code: string | null;
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+function serializePatient(p: PatientRow, extra?: { assessmentCount?: number; lastAssessmentAt?: Date | null }) {
+  return {
+    id: p.id,
+    fullName: p.full_name,
+    birthDate: p.birth_date ? p.birth_date.toISOString().slice(0, 10) : null,
+    phone: p.phone,
+    fiscalCode: p.fiscal_code,
+    notes: p.notes,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+    assessmentCount: extra?.assessmentCount ?? 0,
+    lastAssessmentAt: extra?.lastAssessmentAt ?? null,
+  };
+}
+
+function emptyToNull(value: string | null | undefined): string | null {
+  const v = value?.trim();
+  return v ? v : null;
+}
+
+function normalizePatientData(input: PatientInput) {
+  const fullName = input.fullName.trim();
+  if (!fullName) throw new SivatValidationError("Nome e cognome obbligatori");
+  const birth = emptyToNull(input.birthDate);
+  return {
+    full_name: fullName,
+    birth_date: birth ? new Date(`${birth}T00:00:00.000Z`) : null,
+    phone: emptyToNull(input.phone),
+    fiscal_code: emptyToNull(input.fiscalCode)?.toUpperCase() ?? null,
+    notes: emptyToNull(input.notes),
+  };
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+}
+
+export async function listPatients(pharmacyId: string, search?: string) {
+  const where: Prisma.SivatPatientWhereInput = { pharmacy_id: pharmacyId };
+  const q = search?.trim();
+  if (q) {
+    where.OR = [
+      { full_name: { contains: q, mode: "insensitive" } },
+      { fiscal_code: { contains: q, mode: "insensitive" } },
+      { phone: { contains: q } },
+    ];
+  }
+
+  const patients = await prisma.sivatPatient.findMany({
+    where,
+    include: {
+      _count: { select: { assessments: true } },
+      assessments: { select: { created_at: true }, orderBy: { created_at: "desc" }, take: 1 },
+    },
+    orderBy: { updated_at: "desc" },
+    take: 50,
+  });
+
+  return patients.map((p) =>
+    serializePatient(p, {
+      assessmentCount: p._count.assessments,
+      lastAssessmentAt: p.assessments[0]?.created_at ?? null,
+    })
+  );
+}
+
+export async function getPatientWithLatestAssessment(patientId: string, pharmacyId: string) {
+  const patient = await prisma.sivatPatient.findFirst({
+    where: { id: patientId, pharmacy_id: pharmacyId },
+    include: { _count: { select: { assessments: true } } },
+  });
+  if (!patient) return null;
+
+  const latest = await prisma.sivatAssessment.findFirst({
+    where: { patient_id: patientId, pharmacy_id: pharmacyId },
+    include: { user: { select: { name: true } } },
+    orderBy: { created_at: "desc" },
+  });
+
+  return {
+    patient: serializePatient(patient, {
+      assessmentCount: patient._count.assessments,
+      lastAssessmentAt: latest?.created_at ?? null,
+    }),
+    latestAssessment: latest ? serialize(latest as unknown as Record<string, unknown>) : null,
+  };
+}
+
+export async function updatePatient(patientId: string, input: PatientInput, pharmacyId: string) {
+  const existing = await prisma.sivatPatient.findFirst({ where: { id: patientId, pharmacy_id: pharmacyId } });
+  if (!existing) throw new SivatValidationError("Cliente non trovato");
+  try {
+    const updated = await prisma.sivatPatient.update({
+      where: { id: patientId },
+      data: normalizePatientData(input),
+    });
+    return serializePatient(updated);
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new SivatValidationError("Esiste già un cliente con questo codice fiscale");
+    throw err;
+  }
+}
+
 // ── CRUD ──
 
 export async function createAssessment(data: CreateSivatInput, userId: string, pharmacyId: string) {
-  const assessment = await prisma.sivatAssessment.create({
-    data: {
+  const patientData = normalizePatientData(data.patient);
+
+  // Upsert patient + create assessment atomically
+  try {
+    return await prisma.$transaction(async (tx) => {
+      let patientId: string;
+      if (data.patient.id) {
+        const existing = await tx.sivatPatient.findFirst({
+          where: { id: data.patient.id, pharmacy_id: pharmacyId },
+        });
+        if (!existing) throw new SivatValidationError("Cliente non trovato");
+        await tx.sivatPatient.update({ where: { id: existing.id }, data: patientData });
+        patientId = existing.id;
+      } else {
+        const created = await tx.sivatPatient.create({
+          data: { ...patientData, pharmacy_id: pharmacyId },
+        });
+        patientId = created.id;
+      }
+
+      const assessment = await tx.sivatAssessment.create({
+        data: buildAssessmentData(data, patientData.full_name, patientId, userId, pharmacyId),
+        include: { user: { select: { name: true } } },
+      });
+      return serialize(assessment as unknown as Record<string, unknown>);
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      throw new SivatValidationError(
+        "Esiste già un cliente con questo codice fiscale: selezionalo da \"Cliente registrato\""
+      );
+    }
+    throw err;
+  }
+}
+
+function buildAssessmentData(
+  data: CreateSivatInput,
+  patientName: string,
+  patientId: string,
+  userId: string,
+  pharmacyId: string
+): Prisma.SivatAssessmentUncheckedCreateInput {
+  return {
       user_id: userId,
       pharmacy_id: pharmacyId,
-      patient_name: data.patientName.trim(),
+      patient_id: patientId,
+      patient_name: patientName,
       score_a: data.scoreA,
       score_b: data.scoreB,
       score_c: data.scoreC,
@@ -91,10 +267,7 @@ export async function createAssessment(data: CreateSivatInput, userId: string, p
       answers: data.answers as Prisma.InputJsonValue,
       criticalities: data.criticalities as Prisma.InputJsonValue,
       interventions: data.interventions as Prisma.InputJsonValue,
-    },
-    include: { user: { select: { name: true } } },
-  });
-  return serialize(assessment as unknown as Record<string, unknown>);
+  };
 }
 
 export async function getAssessment(id: string, pharmacyId: string) {

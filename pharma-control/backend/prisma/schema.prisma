@@ -20,6 +20,7 @@ model Pharmacy {
   users              User[]
   reports            Report[]
   sivat_assessments  SivatAssessment[]
+  sivat_patients     SivatPatient[]
   expense_categories ExpenseCategory[]
   expenses           Expense[]
   suppliers          Supplier[]
@@ -111,6 +112,29 @@ model SectorData {
 
 // ─── SIVAT-D Assessment Module ───────────────────────
 
+// Patient registry (anagrafica) — one row per pharmacy client
+model SivatPatient {
+  id          String    @id @default(cuid())
+
+  pharmacy_id String
+  pharmacy    Pharmacy  @relation(fields: [pharmacy_id], references: [id])
+
+  full_name   String
+  birth_date  DateTime? @db.Date
+  phone       String?
+  fiscal_code String?
+  notes       String?
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  assessments SivatAssessment[]
+
+  @@unique([pharmacy_id, fiscal_code])
+  @@index([pharmacy_id])
+  @@index([full_name])
+}
+
 model SivatAssessment {
   id                String   @id @default(cuid())
 
@@ -120,6 +144,11 @@ model SivatAssessment {
   pharmacy_id       String
   pharmacy          Pharmacy @relation(fields: [pharmacy_id], references: [id])
 
+  // Nullable only for legacy rows; every new assessment is linked to a patient
+  patient_id        String?
+  patient           SivatPatient? @relation(fields: [patient_id], references: [id])
+
+  // Snapshot of the name at compilation time
   patient_name      String
 
   // Section scores (denormalized for fast querying)
@@ -157,6 +186,7 @@ model SivatAssessment {
 
   @@index([pharmacy_id])
   @@index([user_id])
+  @@index([patient_id])
   @@index([patient_name])
   @@index([classification])
   @@index([created_at])

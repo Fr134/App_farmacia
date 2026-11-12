@@ -9,12 +9,78 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
+const patientSchema = z.object({
+  id: z.string().min(1).nullable().optional(),
+  fullName: z.string().trim().min(1, "Nome e cognome obbligatori").max(200),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data di nascita non valida")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  phone: z.string().max(50).nullable().optional(),
+  fiscalCode: z.string().max(32).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+function sendSivatError(err: unknown, res: import("express").Response): boolean {
+  if (err instanceof sivatService.SivatValidationError) {
+    res.status(400).json({ success: false, error: err.message });
+    return true;
+  }
+  return false;
+}
+
+// ── GET /api/sivat/clients — patient registry (search with ?q=) ──
+router.get(
+  "/clients",
+  asyncHandler(async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const patients = await sivatService.listPatients(req.user!.pharmacyId, q);
+    res.json({ success: true, data: { patients } });
+  })
+);
+
+// ── GET /api/sivat/clients/:id — patient + latest assessment (for prefill) ──
+router.get(
+  "/clients/:id",
+  asyncHandler(async (req, res) => {
+    const result = await sivatService.getPatientWithLatestAssessment(req.params.id, req.user!.pharmacyId);
+    if (!result) {
+      res.status(404).json({ success: false, error: "Cliente non trovato" });
+      return;
+    }
+    res.json({ success: true, data: result });
+  })
+);
+
+// ── PUT /api/sivat/clients/:id — update patient registry data ──
+router.put(
+  "/clients/:id",
+  asyncHandler(async (req, res) => {
+    const parsed = patientSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "Dati non validi: " + parsed.error.issues.map((i) => i.message).join(", "),
+      });
+      return;
+    }
+    try {
+      const patient = await sivatService.updatePatient(req.params.id, parsed.data, req.user!.pharmacyId);
+      res.json({ success: true, data: { patient } });
+    } catch (err) {
+      if (!sendSivatError(err, res)) throw err;
+    }
+  })
+);
+
 // ── POST /api/sivat/assessments — create new assessment ──
 router.post(
   "/assessments",
   asyncHandler(async (req, res) => {
     const schema = z.object({
-      patientName: z.string().min(1),
+      patient: patientSchema,
       scoreA: z.number().int().min(0).max(20),
       scoreB: z.number().int().min(0).max(25),
       scoreC: z.number().int().min(0).max(15),
@@ -43,8 +109,12 @@ router.post(
       return;
     }
 
-    const assessment = await sivatService.createAssessment(parsed.data, req.user!.userId, req.user!.pharmacyId);
-    res.status(201).json({ success: true, data: { assessment } });
+    try {
+      const assessment = await sivatService.createAssessment(parsed.data, req.user!.userId, req.user!.pharmacyId);
+      res.status(201).json({ success: true, data: { assessment } });
+    } catch (err) {
+      if (!sendSivatError(err, res)) throw err;
+    }
   })
 );
 
